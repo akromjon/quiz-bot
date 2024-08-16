@@ -99,13 +99,13 @@ class TelegramBotController extends Controller
             return;
         }
 
-        if (Menu::get('theme_based_tests') === $this->message) {
+        if (Menu::get('classes') === $this->message) {
 
             $reply_markup = Keyboard::make()
                 ->inline()
                 ->setResizeKeyboard(true)
                 ->setOneTimeKeyboard(true)
-                ->row([Keyboard::inlineButton(['text' => '5 - Sinf 📖', 'callback_data' => '5_sinf'])])
+                ->row([Keyboard::inlineButton(['text' => '5 - Sinf 📖', 'callback_data' => '5_sinf','url'=>"tg://user?id=".$this->chat_id])])
                 ->row([Keyboard::inlineButton(['text' => '6 - Sinf 📖', 'callback_data' => '6_sinf'])])
                 ->row([Keyboard::inlineButton(['text' => '7 - Sinf 📖', 'callback_data' => '7_sinf'])])
                 ->row([Keyboard::inlineButton(['text' => '8 - Sinf 📖', 'callback_data' => '8_sinf'])])
@@ -125,10 +125,7 @@ class TelegramBotController extends Controller
         }
     }
 
-
-
-    protected function theme_based_tests(): void {}
-
+    
     protected function baseMenu()
     {
         $reply_markup = Keyboard::make()
@@ -137,7 +134,7 @@ class TelegramBotController extends Controller
             ->row([
                 Keyboard::button(Menu::get('free_tests')),
                 Keyboard::button(Menu::get('general_tests')),
-                Keyboard::button(Menu::get('theme_based_tests'))
+                Keyboard::button(Menu::get('classes'))
             ])
             ->row([
                 Keyboard::button(Menu::get('admin')),

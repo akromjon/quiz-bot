@@ -9,7 +9,7 @@ class Menu
         return [
             'free_tests' => 'Bepul Testlar',
             'general_tests' => 'Umumiy Testlar',
-            'theme_based_tests' => 'Mavzulashtirilgan Testlar',
+            'classes' => 'Sinflar',
             'admin' => 'Admin',
             'help' => 'Help',
             'tariffs' => 'Tarriflar',

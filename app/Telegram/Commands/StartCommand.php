@@ -29,7 +29,7 @@ class StartCommand extends Command
             ->row([
                 Keyboard::button(Menu::get('free_tests')),
                 Keyboard::button(Menu::get('general_tests')),
-                Keyboard::button(Menu::get('theme_based_tests'))
+                Keyboard::button(Menu::get('classes'))
             ])
             ->row([
                 Keyboard::button(Menu::get('admin')),
