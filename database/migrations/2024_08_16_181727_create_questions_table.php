@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('question');
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(false);
-            $table->unsignedBigInteger('level_id')->nullable();
+            $table->unsignedBigInteger('sub_category_id')->nullable();
             $table->boolean('is_free')->default(false);
-            $table->foreign('level_id')->references('id')->on('levels')->onDelete('cascade');
+            $table->foreign('sub_category_id')->references('id')->on('sub_categories')->onDelete('cascade');
             $table->timestamps();
         });
     }
