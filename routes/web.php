@@ -11,12 +11,12 @@ Route::get('/set-webhook', function () {
 
     $url = config('app.url') . "/bot/JWOaF3FJrqvt4kDYPVlx";
 
-    $s=Telegram::setWebhook(['url' => $url]);
+    $s = Telegram::setWebhook(['url' => $url]);
 
     Telegram::commandsHandler(true);
 
     return response()->json([
-        'status'=>$s
+        'status' => $s
     ]);
 });
 
@@ -25,7 +25,7 @@ Route::get('/get-updates', function () {
 });
 
 Route::get('/get-me', function () {
-    return Telegram::getMe();
+    return response()->json(['me' => Telegram::getMe()]);
 });
 
 

@@ -52,36 +52,13 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('title'),
-                ToggleColumn::make('is_active')->toggleable(),
+                TextColumn::make('title')->inline()->searchable()->sortable(),
+                ToggleColumn::make('is_active')->searchable()->sortable(),
             ])
             ->filters([
                 // Filter by title
-                Filter::make('title')
-                    ->form([
-                        TextInput::make('title')->placeholder('Filter by title'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        return $query->where('title', 'like', '%'.$data['title'].'%');
-                    }),
-
-                // Filter by is_active status
-                Filter::make('is_active')
-                    ->form([
-                        Select::make('is_active')
-                            ->options([
-                                '' => 'All',
-                                '1' => 'Active',
-                                '0' => 'Inactive',
-                            ])
-                            ->placeholder('Filter by status'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if ($data['is_active'] !== '') {
-                            return $query->where('is_active', $data['is_active'] === '1');
-                        }
-                        return $query;
-                    }),
+               
+                
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

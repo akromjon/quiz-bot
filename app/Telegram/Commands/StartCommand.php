@@ -6,7 +6,6 @@ use App\Models\TelegramUser;
 use App\Telegram\Helpers\Helpers;
 use App\Telegram\Menu\Menu;
 use Telegram\Bot\Commands\Command;
-use Telegram\Bot\Keyboard\Keyboard;
 use Telegram\Bot\Laravel\Facades\Telegram;
 
 class StartCommand extends Command
@@ -21,27 +20,11 @@ class StartCommand extends Command
 
         $update = Telegram::getWebhookUpdate();
 
-        $user = TelegramUser::syncUser($update->getChat());
-
-        $reply_markup = Keyboard::make()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
-            ->row([
-                Keyboard::button(Menu::get('free_tests')),
-                Keyboard::button(Menu::get('general_tests')),
-                Keyboard::button(Menu::get('classes'))
-            ])
-            ->row([
-                Keyboard::button(Menu::get('admin')),
-                Keyboard::button(Menu::get('help'))
-            ])
-            ->row([
-                Keyboard::button(Menu::get('tariffs'))
-            ]);
+        $user = TelegramUser::syncUser($update->getChat());       
 
         $this->replyWithMessage([
             'text' => $user->first_name . ', Botga Xush Kelibsiz!',
-            'reply_markup' => $reply_markup
+            'reply_markup' => Menu::base()
         ]);
     }
 

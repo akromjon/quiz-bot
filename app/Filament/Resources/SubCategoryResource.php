@@ -46,6 +46,7 @@ class SubCategoryResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('category.title')->label('Category')->sortable(),
                 TextColumn::make('title'),
                 ToggleColumn::make('is_active')->toggleable(),
             ])
