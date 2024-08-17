@@ -14,7 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'bot/JWOaF3FJrqvt4kDYPVlx'
         ]);
+
+        $middleware->trustProxies(at: '*');
     })
+    
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

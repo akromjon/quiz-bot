@@ -21,21 +21,9 @@ abstract class Controller
 
     protected function sendMessage(array $params): void
     {
-        if (array_key_exists('reply_markup', $params)) {
+        $params['chat_id'] = $this->chat_id;
 
-            $this->telegram::sendMessage([
-                'chat_id' => $this->chat_id,
-                'text' => $params['text'],
-                'reply_markup' => $params['reply_markup'],
-            ]);
-
-            return;
-        }
-
-        $this->telegram::sendMessage([
-            'chat_id' => $this->chat_id,
-            'text' => $params['text'],
-        ]);
+        $this->telegram::sendMessage($params);
     }
 
     protected function init(Telegram $telegram): Update

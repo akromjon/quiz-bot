@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Level;
+use App\Models\Question;
 use App\Models\SubCategory;
 use App\Telegram\Menu\Menu;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class TelegramBotController extends Controller
 
         $type = $this->objectType($update);
 
-        if ("StartCommand" === $this->message || "/start"===$this->message) {
+        if ("StartCommand" === $this->message || "/start" === $this->message) {
             return;
         }
 
@@ -31,7 +32,7 @@ class TelegramBotController extends Controller
     }
 
     protected function route_message()
-    {       
+    {
 
         match ($this->message) {
 
@@ -45,29 +46,60 @@ class TelegramBotController extends Controller
     }
 
     protected function route_callback_query()
-    { 
+    {
 
-        $message = json_decode($this->message);
+        $message = json_decode($this->message);       
 
-        match ($message->model) {
+
+        match ($message->m) {
 
             'base' => $this->sendMessage([
                 'text' => 'Asosiy Menu:',
                 'reply_markup' => Menu::base()
             ]),
 
-            Category::class => $this->sendMessage([
+            // C = Category::class
+
+            'C' => $this->sendMessage([
                 'text' => 'Sinflar: ',
                 'reply_markup' => Menu::category()
             ]),
 
-            SubCategory::class => $this->sendMessage([
+            // S = SubCategory::class
+
+            'S' => $this->sendMessage([
                 'text' => "Bo'limlar:",
                 'reply_markup' => Menu::subcategory($message->id)
-            ]),          
+            ]),
 
+            // Q = Question::class
+
+            'Q' => $this->handleQuestion($message),
 
             default => $this->sendMessage(['text' => 'Hozirda Bu boyicha ishlamoqdamiz...!']),
+        };
+    }
+
+    protected function handleQuestion(object $message)
+    {
+        if (property_exists($message, 'q_id')) {
+
+            $menu = Menu::question($message->c_id,$message->sc_id, $message->q_id);
+
+        } else {
+            
+            $menu = Menu::question($message->c_id,$message->sc_id);
+        }
+
+        match ($menu['type']) {
+
+            'message' => $this->sendMessage([
+                'text' => $menu['text'],
+                'reply_markup' => $menu['reply_markup'],
+                'parse_mode' => $menu['parse_mode']
+            ]),
+
+            default => null,
         };
     }
 }

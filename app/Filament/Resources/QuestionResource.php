@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\QuestionResource\Pages;
 use App\Filament\Resources\QuestionResource\RelationManagers;
 use App\Models\Question;
+use App\Models\SubCategory;
 use Filament\Forms;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\FileUpload;
@@ -15,6 +16,10 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -32,7 +37,7 @@ class QuestionResource extends Resource
             ->schema([
                 Fieldset::make('Add a question')
                     ->schema([
-                        Select::make('level_id')->relationship('level', 'title')->label('Level'),
+                        Select::make('sub_category_id')->relationship('subCategory', 'title')->label('Sub Categoty'),
                         FileUpload::make('image')->label('Image'),
                         TextInput::make('question')->label("Question")->required(),
                     ])
@@ -41,14 +46,16 @@ class QuestionResource extends Resource
 
                 Fieldset::make('Add Options')
                     ->schema([
-                        Repeater::make('Options')
+                        Repeater::make('questionOptions')
+                            ->relationship('questionOptions')
+                            ->label('Options')
                             ->schema([
-                                TextInput::make('a')->required(),
-                                TextInput::make('b')->required(),
-                                TextInput::make('c'),
-                                TextInput::make('d'),
+                                TextInput::make('option')
+                                    ->label('Option')
+                                    ->required(),
+                                Toggle::make('is_answer')->required(),
                             ])
-                            ->columns(2)
+                            ->columns(1),
                     ])
                     ->live()
                     ->columns(1),
@@ -61,19 +68,34 @@ class QuestionResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('id')->sortable()->searchable(),
+                TextColumn::make("subCategory")->label('Sub Category')
+                    ->formatStateUsing(function ($state, Question $c) {
+
+                        $title = $c->subCategory?->category?->title . ', ' . $c->subCategory->title;
+
+                        return $title;
+                    }),
+                ImageColumn::make('image')->circular(),
+                TextColumn::make('question')->sortable()->searchable(),
+                ToggleColumn::make('is_active')->sortable()->searchable(),
+                ToggleColumn::make('is_free')->sortable()->searchable(),
+
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('id', 'desc');
     }
 
     public static function getRelations(): array
