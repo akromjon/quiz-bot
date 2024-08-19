@@ -39,6 +39,8 @@ class AdministratorPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make("Category")->icon("heroicon-c-square-3-stack-3d"),
                 NavigationGroup::make("Quiz")->icon("heroicon-o-pencil-square"),
+                NavigationGroup::make("Telegram")->icon("heroicon-o-chat-bubble-bottom-center-text"),
+
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

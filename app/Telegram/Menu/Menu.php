@@ -11,7 +11,7 @@ use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
 {
-    private static function get_callback_data(string $model, string $id): array
+    private static function getCallbackData(string $model, string $id): array
     {
         return [
             'm' => class_basename($model)[0],
@@ -19,21 +19,19 @@ class Menu
         ];
     }
 
-    private static function get_back_home_buttons(array $callback_data = ['m' => 'base', 'id' => '']): array
+    private static function getBackHomeButtons(array $callback_data = ['m' => 'base', 'id' => '']): array
     {
         return [
             Keyboard::inlineButton([
                 'text' => '🏠 Bosh Sahifa',
-                'callback_data' => json_encode(['m' => 'base', 'id' => ''])
+                'callback_data' => json_encode(['m' => 'base', 'id' => '']),
             ]),
             Keyboard::inlineButton([
                 'text' => '⬅️ Orqaga',
-                'callback_data' => json_encode($callback_data)
+                'callback_data' => json_encode($callback_data),
             ]),
         ];
     }
-
-
 
     public static function base()
     {
@@ -43,149 +41,159 @@ class Menu
             ->row([
                 Keyboard::button('Bepul Testlar'),
                 Keyboard::button('Umumiy Testlar'),
-                Keyboard::button('Sinflar')
+                Keyboard::button('Sinflar'),
             ])
             ->row([
                 Keyboard::button('Admin'),
-                Keyboard::button('Help')
+                Keyboard::button('Help'),
             ])
             ->row([
-                Keyboard::button('Tarriflar')
+                Keyboard::button('Tarriflar'),
             ]);
     }
 
     public static function category()
     {
+        $categories = Category::active()->get();
+        $callback_data = self::getCallbackData(SubCategory::class, '');
+
         $category = Keyboard::make()
             ->inline()
             ->setResizeKeyboard(true)
             ->setOneTimeKeyboard(true);
 
-        $categories = Category::active()->get();
-
-        $callback_data = self::get_callback_data(SubCategory::class, '');
-
         foreach ($categories as $c) {
-
             $callback_data['id'] = $c->id;
-
-            $category->row([Keyboard::inlineButton(
-                [
+            $category->row([
+                Keyboard::inlineButton([
                     'text' => $c->title,
-                    'callback_data' => json_encode($callback_data)
-                ]
-            )]);
+                    'callback_data' => json_encode($callback_data),
+                ]),
+            ]);
         }
 
-        $category->row(self::get_back_home_buttons());
+        $category->row(self::getBackHomeButtons());
 
         return $category;
     }
 
     public static function subcategory(string $category_id)
     {
+        $subcategories = SubCategory::active()->where('category_id', $category_id)->get();
+        
+        $callback_data = [
+            'm' => 'Q',
+            'c' => $category_id,
+        ];
+
         $subcategory = Keyboard::make()
             ->inline()
             ->setResizeKeyboard(true)
             ->setOneTimeKeyboard(true);
 
-        $subcategories = SubCategory::active()->where('category_id', $category_id)->get();       
-
-        // Q = Question::class
-
-        $callback_data = ['m'=>'Q'];
-
-        $callback_data['c_id'] =$category_id;
-
         foreach ($subcategories as $c) {
-
-            $callback_data['sc_id'] = $c->id;
-
-            $subcategory->row([Keyboard::inlineButton(
-                [
+            
+            $callback_data['s'] = $c->id;
+            
+            $subcategory->row([
+                Keyboard::inlineButton([
                     'text' => $c->title,
-                    'callback_data' => json_encode($callback_data)
-                ]
-            )]);
+                    'callback_data' => json_encode($callback_data),
+                ]),
+            ]);
         }
 
-        $callback_data = self::get_callback_data(Category::class, $category_id);
-
-        $subcategory->row(self::get_back_home_buttons($callback_data));
+        $callback_data = self::getCallbackData(Category::class, $category_id);
+        
+        $subcategory->row(self::getBackHomeButtons($callback_data));
 
         return $subcategory;
     }
 
-    public static function question(string $category_id,string $sub_category_id, string $question_id = null): array
+    public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next=false): array
     {
-        $menu = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
 
-        $question = Question::where('sub_category_id', $sub_category_id);
+        $question = self::getQuestion($sub_category_id, $question_id);
 
+        if (!$question) {
 
-        if (!is_null($question_id)) {
-
-            $question = $question->where('id', '>', $question_id);
+            return self::handleWhenThereIsNoQuestion($category_id);
         }
 
-        $question = $question->active()->orderBy('id')->first();
+        return self::handleQuestion($question, $sub_category_id, $category_id, $load_next);
+    }
 
-        if(!$question && empty($question)){
-            
-            $callback_data = self::get_callback_data(SubCategory::class, $category_id);
-
-            $menu->row(self::get_back_home_buttons($callback_data));
-
-            return [
-                'type' => 'message',
-                'reply_markup' => $menu,
-                'parse_mode' => 'HTML',
-                'text' => "Testlar Tugadi"
-            ];
-        }        
-
-        // Q=Question::class
-
-        $callback_data = ['m'=>'Q'];
-
-        $callback_data['sc_id'] = $sub_category_id;
-
-        $callback_data['c_id'] = $category_id;
-
-        $callback_data['q_id'] = $question->id;
+    protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id,bool $load_next): array
+    {
+        $callback_data = [
+            's' => $sub_category_id,
+            'c' => $category_id,
+            'q' => $question->id,
+        ];
 
         $letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+
+        $keyboards = [];
 
         foreach ($question->questionOptions as $key => $option) {
 
             $callback_data['id'] = $option->id;
 
-            logger((json_encode($callback_data)));
+            $callback_data['m'] = $option->is_answer ? 'Q' : 'W';
 
-            $keyboards[] = Keyboard::inlineButton(
-                [
-                    'text' => $letters[$key],
-                    'callback_data' => json_encode($callback_data)
-                ]
-            );
+            $keyboards[] = Keyboard::inlineButton([
+                'text' => $letters[$key],
+                'callback_data' => json_encode($callback_data),
+            ]);
         }
 
-        $menu->row($keyboards);
+        $menu = Keyboard::make()
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row($keyboards);
 
-        $text = "<b>$question->question</b>\n\n";
+        $text = "<b>{$question->question}</b>\n\n";
 
-        foreach ($question->questionOptions as $option) {
-            $text .= $option->option . "\n";
-        }
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
 
         return [
             'type' => 'message',
             'reply_markup' => $menu,
             'parse_mode' => 'HTML',
-            'text' => $text
+            'text' => $text,
+        ];
+    }
+
+    protected static function getQuestion(int $sub_category_id, int|null $question_id)
+    {
+        $query = Question::where('sub_category_id', $sub_category_id)
+            ->active()
+            ->orderBy('id');
+
+        if ($question_id !== null) {
+            
+            $query->where('id', '>', $question_id);
+        }
+
+        return $query->first();
+    }
+
+    protected static function handleWhenThereIsNoQuestion(int $category_id): array
+    {
+        $callback_data = self::getCallbackData(SubCategory::class, $category_id);
+
+        $menu = Keyboard::make()
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row(self::getBackHomeButtons($callback_data));
+
+        return [
+            'type' => 'message',
+            'reply_markup' => $menu,
+            'parse_mode' => 'HTML',
+            'text' => "Testlar Tugadi",
         ];
     }
 }

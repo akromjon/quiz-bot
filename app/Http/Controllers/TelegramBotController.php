@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\SubCategory;
 use App\Telegram\Menu\Menu;
 use Illuminate\Http\Request;
+use Telegram\Bot\Keyboard\Keyboard;
 
 class TelegramBotController extends Controller
 {
@@ -48,7 +49,7 @@ class TelegramBotController extends Controller
     protected function route_callback_query()
     {
 
-        $message = json_decode($this->message);       
+        $message = json_decode($this->message);
 
 
         match ($message->m) {
@@ -59,22 +60,22 @@ class TelegramBotController extends Controller
             ]),
 
             // C = Category::class
-
             'C' => $this->sendMessage([
                 'text' => 'Sinflar: ',
                 'reply_markup' => Menu::category()
             ]),
 
             // S = SubCategory::class
-
             'S' => $this->sendMessage([
                 'text' => "Bo'limlar:",
                 'reply_markup' => Menu::subcategory($message->id)
             ]),
 
             // Q = Question::class
-
             'Q' => $this->handleQuestion($message),
+
+            // W = Wrong Answer
+            'W' => $this->handleWrongAnswer(),
 
             default => $this->sendMessage(['text' => 'Hozirda Bu boyicha ishlamoqdamiz...!']),
         };
@@ -82,14 +83,15 @@ class TelegramBotController extends Controller
 
     protected function handleQuestion(object $message)
     {
-        if (property_exists($message, 'q_id')) {
+        if (property_exists($message, 'q')) {
 
-            $menu = Menu::question($message->c_id,$message->sc_id, $message->q_id);
-
+            $menu = Menu::question($message->c, $message->s, $message->q, true);
         } else {
-            
-            $menu = Menu::question($message->c_id,$message->sc_id);
+
+            $menu = Menu::question($message->s, $message->s);
         }
+
+
 
         match ($menu['type']) {
 
@@ -101,5 +103,29 @@ class TelegramBotController extends Controller
 
             default => null,
         };
+    }
+
+    protected function handleWrongAnswer()
+    {
+        $keyboard = Keyboard::make()
+            ->inline()
+            ->row(
+                [Keyboard::inlineButton(['text' => 'Updated Button', 'callback_data' => 'new_data'])]
+            );
+
+
+        $this->telegram::editMessageText([
+            'chat_id' => $this->chat_id,
+            'message_id' => $this->callbackQuery->getMessage()->message_id,
+            'text' => 'You selected an option!',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+        ]);
+
+        // $this->telegram::answerCallbackQuery([
+        //     'callback_query_id' => $this->callbackQuery->getId(),
+        //     'text' => "Noto'g'ri ❌",
+        //     'show_alert' => true,
+        // ]);
     }
 }

@@ -10,6 +10,7 @@ abstract class Controller
     protected Telegram $telegram;
     protected string $chat_id;
     protected string $message;
+    protected $callbackQuery;
     public function __construct(Telegram $telegram)
     {
         $this->telegram = $telegram;
@@ -44,12 +45,14 @@ abstract class Controller
                 return 'message';
             },
             'callback_query' => function () use ($update) {
+                $this->callbackQuery = $update->getCallbackQuery();
                 $this->message = $update->getCallbackQuery()->getData();
                 $this->chat_id = $update->getCallbackQuery()->getMessage()->getChat()->getId();
                 return 'callback_query';
             },
             default => 'unknown',
         };
+
 
         return $type();
     }
