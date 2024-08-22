@@ -110,20 +110,29 @@ class Menu
         return $subcategory;
     }
 
-    public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false): array
-    {
+    protected static function getQuestion(int $question_id){
+       return Question::where('id', $question_id)
+            ->active()
+            ->first();       
 
-        $question = self::getQuestion($sub_category_id, $question_id);
+    }
+
+   
+
+    public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false,bool $can_load_old_question=false): array
+    { 
+
+        $question = $can_load_old_question ? self::getQuestion($question_id)  : self::getNextQuestion($sub_category_id, $question_id);
 
         if (!$question) {
 
             return self::handleWhenThereIsNoQuestion($category_id);
         }
 
-        return self::handleQuestion($question, $sub_category_id, $category_id, $load_next);
+        return self::handleQuestion(question: $question, sub_category_id: $sub_category_id, category_id: $category_id, load_next: $load_next,old_question_id: $question_id);
     }
 
-    protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id, bool $load_next): array
+    protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id, bool $load_next,int|null $old_question_id): array
     {
         $callback_data = [
             's' => $sub_category_id,
@@ -147,11 +156,36 @@ class Menu
             ]);
         }
 
+        
+
+        $callback_data =[];
+        
+        if($old_question_id===null){
+            $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);
+        }else{
+            $callback_data = self::getCallbackData(Question::class, (string)$old_question_id);
+
+        }   
+
+        $callback_data['o']=$old_question_id;
+        
+        $buttons=[Keyboard::inlineButton([
+            'text' => '🏠 Bosh Sahifa',
+            'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+        ]),
+        Keyboard::inlineButton([
+            'text' => '⬅️ Orqaga',
+            'callback_data' => json_encode($callback_data),
+            ]),
+        ];
+
         $menu = Keyboard::make()
                 ->inline()
                 ->setResizeKeyboard(true)
                 ->setOneTimeKeyboard(true)
-                ->row($keyboards);
+                ->row($keyboards)        
+                ->row($buttons);
+                
 
             $text = "<b>{$question->question}</b>\n\n";
 
@@ -167,7 +201,7 @@ class Menu
 
 
 
-    protected static function getQuestion(int $sub_category_id, int|null $question_id)
+    protected static function getNextQuestion(int $sub_category_id, int|null $question_id)
     {
         $query = Question::where('sub_category_id', $sub_category_id)
             ->active()

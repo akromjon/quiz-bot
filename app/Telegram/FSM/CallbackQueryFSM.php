@@ -3,87 +3,90 @@
 namespace App\Telegram\FSM;
 
 use App\Telegram\Menu\Menu;
-use Telegram\Bot\Keyboard\Keyboard;
 
 class CallbackQueryFSM extends Base
 {
-    public  function route(): void
+    protected object $update;    
+    protected object $callback_query;
+    protected string $message;
+    protected int $message_id;
+    public static function handle(...$params): self
+    {
+        $instance = new self(...$params);        
+
+        $instance->run();
+
+        return $instance;
+    }
+
+    public function run():void{
+        
+        $this->callback_query = $this->update->getCallbackQuery();
+        
+        $this->message = $this->update->getCallbackQuery()->getData();
+        
+        $this->chat_id = $this->update->getCallbackQuery()->getMessage()->getChat()->getId();
+
+        $this->message_id=$this->callback_query->getMessage()->message_id;
+        
+        $this->route();
+    }
+    protected function route(): void
     {
         $message = json_decode($this->message);
 
-
         match ($message->m) {
-
-            'base' => $this->sendMessage([
-                'text' => 'Asosiy Menu:',
-                'reply_markup' => Menu::base()
-            ]),
-
-            // C = Category::class
-            'C' => $this->sendMessage([
-                'text' => 'Sinflar: ',
-                'reply_markup' => Menu::category()
-            ]),
-
-            // S = SubCategory::class
-            'S' => $this->sendMessage([
-                'text' => "Bo'limlar:",
-                'reply_markup' => Menu::subcategory($message->id)
-            ]),
-
-            // Q = Question::class
+            'base' => $this->handleBase(),
+            'C' => $this->editMessageText($this->createEditMessage($this->message_id,'Sinflar: ', Menu::category())),
+            'S' => $this->editMessageText($this->createEditMessage($this->message_id,"Bo'limlar:", Menu::subcategory($message->id))),
             'Q' => $this->handleQuestion($message),
-
-            // W = Wrong Answer
             'W' => $this->handleWrongAnswer(),
-
-            default => $this->sendMessage(['text' => 'Hozirda Bu boyicha ishlamoqdamiz...!']),
+            default => $this->editMessageText(
+                $this->createEditMessage($this->message_id,'Hozirda Bu boyicha ishlamoqdamiz...!')
+            ),
         };
     }
 
-    protected function handleQuestion(object $message)
+    protected function handleBase():void{
+
+        $this->deleteMessage([
+            'message_id'=>$this->message_id,
+        ]);
+
+        $this->sendMessage($this->createMessage('Asosiy Menu:', Menu::base()));
+    }
+
+   
+
+    protected function handleQuestion(object $message): void
     {
-        if (property_exists($message, 'q')) {
+        $menu=[];
 
-            $menu = Menu::question($message->c, $message->s, $message->q, true);
-        } else {
+        if(property_exists($message, 'o')){
+            
+           $menu= Menu::question(category_id: 0, sub_category_id: 0, question_id: $message->o, load_next: false, can_load_old_question: true);
 
-            $menu = Menu::question($message->c, $message->s);
         }
-
-        match ($menu['type']) {
-
-            'message' => $this->sendMessage([
-                'text' => $menu['text'],
-                'reply_markup' => $menu['reply_markup'],
-                'parse_mode' => $menu['parse_mode']
-            ]),
-
-            'edit_message' => $this->editMessageText([
-                'message_id' => $this->callback_query->getMessage()->message_id,
-                'text' => $menu['text'],
-                'reply_markup' => $menu['reply_markup'],
-                'parse_mode' => $menu['parse_mode']
-            ]),
-
-            default => null,
-        };
+        else if(property_exists($message, 'q')){
+            
+            $menu=  Menu::question(category_id: $message->c, sub_category_id:$message->s, question_id:$message->q, load_next: true);
+        }
+        else{
+            
+            $menu= Menu::question(category_id: $message->c, sub_category_id: $message->s);
+        }
+    
+        $this->editMessageText(
+            $this->createEditMessage($this->message_id, $menu['text'], $menu['reply_markup'],$menu['parse_mode'])
+        );
     }
-    protected function handleWrongAnswer()
+
+    protected function handleWrongAnswer(): void
     {
         $this->telegram::answerCallbackQuery([
             'callback_query_id' => $this->callback_query->getId(),
             'text' => "Noto'g'ri ❌",
             'show_alert' => true,
         ]);
-    }
-
-    public static function handle(...$params): self
-    {
-        $ins = new self(...$params);
-
-        $ins->route();
-
-        return $ins;
     }
 }
