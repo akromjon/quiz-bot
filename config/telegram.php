@@ -44,6 +44,7 @@ return [
             'commands' => [
                 StartCommand::class,
             ],
+            'secret_token'=>env('TELEGRAM_BOT_SECRET_TOKEN')
         ],
 
         //        'mySecondBot' => [
