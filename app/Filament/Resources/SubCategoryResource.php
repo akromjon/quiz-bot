@@ -46,6 +46,7 @@ class SubCategoryResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('id'),
                 TextColumn::make('category.title')->label('Category')->sortable(),
                 TextColumn::make('title'),
                 ToggleColumn::make('is_active')->toggleable(),
@@ -61,7 +62,7 @@ class SubCategoryResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])->defaultSort('id', 'desc');
     }
 
     public static function getRelations(): array

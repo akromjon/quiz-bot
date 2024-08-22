@@ -52,6 +52,7 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('id')->sortable()->searchable(),
                 TextColumn::make('title')->inline()->searchable()->sortable(),
                 ToggleColumn::make('is_active')->searchable()->sortable(),
             ])
@@ -69,7 +70,7 @@ class CategoryResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])->defaultSort('id', 'desc');
     }
 
     public static function getRelations(): array

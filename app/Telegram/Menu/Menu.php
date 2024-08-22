@@ -80,7 +80,7 @@ class Menu
     public static function subcategory(string $category_id)
     {
         $subcategories = SubCategory::active()->where('category_id', $category_id)->get();
-        
+
         $callback_data = [
             'm' => 'Q',
             'c' => $category_id,
@@ -92,9 +92,9 @@ class Menu
             ->setOneTimeKeyboard(true);
 
         foreach ($subcategories as $c) {
-            
+
             $callback_data['s'] = $c->id;
-            
+
             $subcategory->row([
                 Keyboard::inlineButton([
                     'text' => $c->title,
@@ -104,13 +104,13 @@ class Menu
         }
 
         $callback_data = self::getCallbackData(Category::class, $category_id);
-        
+
         $subcategory->row(self::getBackHomeButtons($callback_data));
 
         return $subcategory;
     }
 
-    public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next=false): array
+    public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false): array
     {
 
         $question = self::getQuestion($sub_category_id, $question_id);
@@ -123,7 +123,7 @@ class Menu
         return self::handleQuestion($question, $sub_category_id, $category_id, $load_next);
     }
 
-    protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id,bool $load_next): array
+    protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id, bool $load_next): array
     {
         $callback_data = [
             's' => $sub_category_id,
@@ -148,22 +148,24 @@ class Menu
         }
 
         $menu = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
-            ->row($keyboards);
+                ->inline()
+                ->setResizeKeyboard(true)
+                ->setOneTimeKeyboard(true)
+                ->row($keyboards);
 
-        $text = "<b>{$question->question}</b>\n\n";
+            $text = "<b>{$question->question}</b>\n\n";
 
-        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
+            $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
 
-        return [
-            'type' => 'message',
-            'reply_markup' => $menu,
-            'parse_mode' => 'HTML',
-            'text' => $text,
-        ];
+            return [
+                'type' => $load_next ? 'edit_message' : 'message',
+                'reply_markup' => $menu,
+                'parse_mode' => 'HTML',
+                'text' => $text,
+            ];
     }
+
+
 
     protected static function getQuestion(int $sub_category_id, int|null $question_id)
     {
@@ -172,7 +174,7 @@ class Menu
             ->orderBy('id');
 
         if ($question_id !== null) {
-            
+
             $query->where('id', '>', $question_id);
         }
 
