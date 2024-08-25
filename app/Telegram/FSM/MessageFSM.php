@@ -6,8 +6,6 @@ use App\Telegram\Menu\Menu;
 
 class MessageFSM extends Base
 {
-    protected string $message;
-
     protected int $message_id;
 
     public static function handle(...$params): self

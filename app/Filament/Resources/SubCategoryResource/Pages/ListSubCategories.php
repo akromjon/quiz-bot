@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SubCategoryResource\Pages;
 
 use App\Filament\Resources\SubCategoryResource;
 use Filament\Actions;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListSubCategories extends ListRecords
@@ -13,7 +14,7 @@ class ListSubCategories extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make(),            
         ];
     }
 }

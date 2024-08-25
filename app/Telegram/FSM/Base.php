@@ -7,7 +7,7 @@ abstract class Base implements FSMInterface
 {
     protected string $chat_id;
 
-    protected string $message;    
+    protected string|null|object $message;    
 
     public function __construct(protected object &$telegram, protected object &$update){
 
@@ -25,6 +25,13 @@ abstract class Base implements FSMInterface
         $params['chat_id'] = $this->chat_id;
 
         $this->telegram::editMessageText($params);
+    }
+
+    protected function answerCallbackQuery(array $params): void
+    {
+        $params['callback_query_id'] = $this->update->getCallbackQuery()->getId();
+
+        $this->telegram::answerCallbackQuery($params);
     }
 
     protected function deleteMessage(array $params):void{
@@ -52,7 +59,7 @@ abstract class Base implements FSMInterface
             'parse_mode' => $parseMode,
         ];
     }
-
+   
     abstract public static function handle(...$params): self;
     abstract protected function route(): void;
 
