@@ -19,7 +19,7 @@ class QuestionImport implements ToCollection, WithMultipleSheets
     public function sheets(): array
     {
         return [
-            1 => $this, // 0 is the index for the first sheet
+            0 => $this, // 0 is the index for the first sheet
         ];
     }
     public function collection(Collection $collection)
@@ -30,7 +30,9 @@ class QuestionImport implements ToCollection, WithMultipleSheets
 
         DB::transaction(function () use ($filteredCollection)  {
 
-            $filteredCollection->each(function ($row) {
+            $question_number=1;
+
+            $filteredCollection->each(function ($row) use (&$question_number) {
 
                 if($row[1]===null){
                     return;
@@ -39,7 +41,7 @@ class QuestionImport implements ToCollection, WithMultipleSheets
                 $question = Question::create([
                     'sub_category_id' => $this->sub_category_id,
                     'is_active' => true,
-                    'number' => trim($row[0]),
+                    'number' => $question_number++,
                     'question' => trim($row[1]),
                 ]);
 

@@ -16,15 +16,22 @@ class StartCommand extends Command
 
     public function handle()
     {
-        $this->typing();
-
         $update = Telegram::getWebhookUpdate();
 
-        $user = TelegramUser::syncUser($update->getChat());       
+        $user = TelegramUser::syncUser($update->getChat());
+        
+        $user->update([
+            'status'=>'active'
+        ]);
+
+        $text=setting('welcome_message') ?? "Assalomu alaykum, <a href='tg://user?id={$user->user_id}'>{$user->first_name}</a>.\nBotga Xush Kelibsiz!";
+
+        $text = str_replace(['GET_USER_ID', 'GET_FIRST_NAME'], [$user->user_id, $user->first_name], $text);        
 
         $this->replyWithMessage([
-            'text' => $user->first_name . ', Botga Xush Kelibsiz!',
-            'reply_markup' => Menu::base()
+            'text' => $text,
+            'reply_markup' => Menu::base(),
+            'parse_mode' => 'HTML'
         ]);
     }
 

@@ -75,7 +75,7 @@ class CallbackQueryFSM extends Base
             'text' => '📚 Sinflar 📚',
         ]);
 
-        $this->editMessageText($this->createEditMessage($this->message_id, 'Sinflar: ', Menu::category()));
+        $this->editMessageText($this->createEditMessage($this->message_id, '📚 Mavzulashtirilgan Testlar:', Menu::category()));
     }
 
     protected function handleSubCategory(object $message): void

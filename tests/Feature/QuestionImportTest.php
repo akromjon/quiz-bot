@@ -10,7 +10,7 @@ it('it imports Questions from ExcelSheet', function () {
 
     $this->assertFileExists($file);
 
-    Excel::import(new QuestionImport(3), $file,readerType: ExcelExcel::XLSX);
+    Excel::import(new QuestionImport(1), $file,readerType: ExcelExcel::XLSX);
     
     $this->assertTrue(true);
 

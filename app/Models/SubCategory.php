@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 
 
-class SubCategory extends Model
+class SubCategory extends BaseModel
 {
     use HasFactory;
 

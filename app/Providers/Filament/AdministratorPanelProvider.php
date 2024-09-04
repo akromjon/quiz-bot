@@ -18,6 +18,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Outerweb\FilamentSettings\Filament\Plugins\FilamentSettingsPlugin;
+use App\Filament\Pages\Settings\Settings;
 
 class AdministratorPanelProvider extends PanelProvider
 {
@@ -41,7 +43,7 @@ class AdministratorPanelProvider extends PanelProvider
                 NavigationGroup::make("Quiz")->icon("heroicon-o-pencil-square"),
                 NavigationGroup::make("Telegram")->icon("heroicon-o-chat-bubble-bottom-center-text"),
 
-            ])
+            ])            
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -60,6 +62,12 @@ class AdministratorPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                FilamentSettingsPlugin::make()
+                    ->pages([
+                        Settings::class,
+                    ])
             ]);
     }
 }

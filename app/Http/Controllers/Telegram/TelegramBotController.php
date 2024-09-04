@@ -15,6 +15,11 @@ class TelegramBotController extends TelegramBotBaseController
         $telegram::commandsHandler(true);
 
         $update = $telegram::getWebhookUpdate();
+
+        $telegram::sendChatAction([
+            'chat_id' => $update->getChat()->getId(),
+            'action' => 'typing'
+        ]);
         
         $class = match ($update->objectType()) {
             'message' => MessageFSM::class,
