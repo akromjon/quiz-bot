@@ -11,6 +11,10 @@ use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
 {
+    /**
+     * @param string $model, string $id
+     * @return array <string, string>
+     */
     private static function getCallbackData(string $model, string $id): array
     {
         return [
@@ -33,28 +37,84 @@ class Menu
         ];
     }
 
-    public static function base()
+    public static function how_bot_works():Keyboard
+    {
+        return Keyboard::make()
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Bosh Sahifa',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+                Keyboard::inlineButton([
+                    'text' => '📤 Admin',
+                    'url' =>setting('admin_username_link') ?? "https://t.me/akrom_n",
+                ]),
+            ]);
+    }
+
+    public static function profile(): Keyboard
+    {
+        return Keyboard::make()
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Bosh Sahifa',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+    }
+
+    public static function admin(): Keyboard
+    {
+        return Keyboard::make()
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Bosh Sahifa',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+                Keyboard::inlineButton([
+                    'text' => '📤 Admin',
+                    'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
+                ]),
+            ]);
+    }
+
+
+    public static function base(): Keyboard
     {
         return Keyboard::make()
             ->setResizeKeyboard(true)
             ->setOneTimeKeyboard(true)
             ->row([
-                Keyboard::button('Bepul Testlar'),
-                Keyboard::button('Umumiy Testlar'),
-                Keyboard::button('Sinflar'),
+                Keyboard::button(['text' => '🆓 Bepul Testlar']),
+                Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
-                Keyboard::button('Admin'),
-                Keyboard::button('Help'),
+                Keyboard::button('📚 Mavzulashtirilgan Testlar'),
             ])
             ->row([
-                Keyboard::button('Tarriflar'),
+                Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
+                Keyboard::button('ℹ️ Biz Haqimizda')
+            ])
+            ->row([             
+                Keyboard::button('👤 Mening Profilim'),
+                Keyboard::button('👨‍💻 Admin'),
             ]);
     }
 
     public static function category()
-    {
-        $categories = Category::active()->get();
+    {      
+
+        $categories = Category::getCachedCategories();
+
         $callback_data = self::getCallbackData(SubCategory::class, '');
 
         $category = Keyboard::make()
@@ -77,7 +137,7 @@ class Menu
         return $category;
     }
 
-    public static function subcategory(string $category_id)
+    public static function subcategory(int $category_id): array
     {
         $subcategories = SubCategory::active()->where('category_id', $category_id)->get();
 
@@ -97,7 +157,7 @@ class Menu
 
             $subcategory->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title,
+                    'text' => $c->title . "\xE2\x80\x8B",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -107,21 +167,67 @@ class Menu
 
         $subcategory->row(self::getBackHomeButtons($callback_data));
 
-        return $subcategory;
+
+
+        return [
+            'keyboard' => $subcategory,
+            'answerCallbackText' => $subcategories?->first()?->category?->title
+        ];
     }
+
+
+
+    protected static function getNextQuestion(int $sub_category_id, int|null $question_id)
+    {
+        $query = Question::where('sub_category_id', $sub_category_id)
+            ->active()
+            ->orderBy('id');
+
+        if ($question_id !== null) {
+
+            $query->where('id', '>', $question_id);
+        }
+
+        return $query->first();
+    }
+
+
 
     public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false): array
     {
 
-        $question = self::getQuestion($sub_category_id, $question_id);
+        $question = self::getNextQuestion($sub_category_id, $question_id);
 
         if (!$question) {
 
             return self::handleWhenThereIsNoQuestion($category_id);
         }
 
-        return self::handleQuestion($question, $sub_category_id, $category_id, $load_next);
+        return self::handleQuestion(question: $question, sub_category_id: $sub_category_id, category_id: $category_id, load_next: $load_next);
     }
+
+    public static function handlePreviousQuestion(int $category_id, int $sub_category_id, int $question_id): array|null
+    {
+        $question = Question::where('sub_category_id', $sub_category_id)
+            ->active()
+            ->where('id', '<', $question_id)
+            ->orderByDesc('id')
+            ->first();
+
+
+        if (!$question) {
+
+            return null;
+        }
+
+        $keyboard = self::handleQuestion($question, $sub_category_id, $category_id, true);
+
+        $keyboard['answerCallbackText'] = '🔙 Orqaga';
+
+        return $keyboard;
+    }
+
+
 
     protected static function handleQuestion(Question $question, int $sub_category_id, int $category_id, bool $load_next): array
     {
@@ -147,38 +253,48 @@ class Menu
             ]);
         }
 
+        // $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);   
+
+        $callback_data = [
+            'm' => 'P',
+            'c' => $category_id,
+            's' => $sub_category_id,
+            'q' => $question->id,
+        ];
+
+
         $menu = Keyboard::make()
-                ->inline()
-                ->setResizeKeyboard(true)
-                ->setOneTimeKeyboard(true)
-                ->row($keyboards);
+            ->inline()
+            ->setResizeKeyboard(true)
+            ->setOneTimeKeyboard(true)
+            ->row($keyboards)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '⬅️ Orqaga',
+                    'callback_data' => json_encode($callback_data),
+                ])
+            ])
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏁 Testni Tugatish',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ])
+            ]);
 
-            $text = "<b>{$question->question}</b>\n\n";
-
-            $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
-
-            return [
-                'type' => $load_next ? 'edit_message' : 'message',
-                'reply_markup' => $menu,
-                'parse_mode' => 'HTML',
-                'text' => $text,
-            ];
-    }
 
 
+        $text = "<b>{$question->number} - SAVOL:</b>\n\n";
+        $text .= "<b>{$question->question}</b>\n\n";
 
-    protected static function getQuestion(int $sub_category_id, int|null $question_id)
-    {
-        $query = Question::where('sub_category_id', $sub_category_id)
-            ->active()
-            ->orderBy('id');
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
 
-        if ($question_id !== null) {
-
-            $query->where('id', '>', $question_id);
-        }
-
-        return $query->first();
+        return [
+            'type' => $load_next ? 'edit_message' : 'message',
+            'reply_markup' => $menu,
+            'parse_mode' => 'HTML',
+            'text' => $text,
+            'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
+        ];
     }
 
     protected static function handleWhenThereIsNoQuestion(int $category_id): array
@@ -195,7 +311,8 @@ class Menu
             'type' => 'message',
             'reply_markup' => $menu,
             'parse_mode' => 'HTML',
-            'text' => "Testlar Tugadi",
+            'text' => "🏁 Testlar Tugadi 🏁",
+            'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
         ];
     }
 }

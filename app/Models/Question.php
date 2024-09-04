@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 
 
-class Question extends Model
+class Question extends BaseModel
 {
     use HasFactory;
 

@@ -18,6 +18,7 @@ Route::get('/set-webhook', function () {
     $url = config('app.url') . "/bot/JWOaF3FJrqvt4kDYPVlx";
 
     $res = Telegram::setWebhook([
+        'drop_pending_updates'=> true,
         'url' => $url,
         'secret_token' => config('telegram.bots.mybot.secret_token')
     ]);

@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,6 +37,7 @@ class TelegramUserResource extends Resource
                 Select::make('status')->options([
                     'active' => 'active',
                     'inactive' => 'inactive',
+                    'blocked' => 'blocked',
                 ]),
                 Select::make('tariff')->options([
                     'free' => 'free',
@@ -53,13 +55,21 @@ class TelegramUserResource extends Resource
                 TextColumn::make('username')->sortable()->searchable(),
                 TextColumn::make('first_name')->sortable()->searchable(),
                 TextColumn::make('last_name')->sortable()->searchable(),
-                TextColumn::make('status')->sortable()->searchable(),
-                TextColumn::make('tariff')->sortable()->searchable(),
+                SelectColumn::make('status')->options([
+                    'active' => 'active',
+                    'inactive' => 'inactive',
+                    'blocked' => 'blocked',
+                ])->inline()->sortable()->searchable(),
+                SelectColumn::make('tariff')->options([
+                    'free' => 'free',
+                    'paid' => 'paid',
+                ])->sortable()->searchable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
 

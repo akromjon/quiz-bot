@@ -56,6 +56,11 @@ return [
             'throw' => false,
         ],
 
+        'imports' => [
+            'driver' => 'local',
+            'root' => storage_path('app/imports'),
+        ],
+
     ],
 
     /*

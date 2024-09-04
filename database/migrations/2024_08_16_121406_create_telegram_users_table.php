@@ -20,8 +20,11 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('language_code',10)->nullable();
             $table->string('phone_number')->nullable();
-            $table->enum('status',['active','inactive'])->default('active');
+            $table->enum('status',['active','inactive','blocked'])->default('active');
             $table->enum('tariff',['free','paid'])->default('free');
+            $table->timestamp('last_payment_date')->nullable();
+            $table->timestamp('next_payment_date')->nullable();
+            $table->float('balance',8)->default(0);
             $table->timestamps();
         });
     }

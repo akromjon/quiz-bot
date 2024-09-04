@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 
 
-class QuestionOption extends Model
+class QuestionOption extends BaseModel
 {
     use HasFactory;
 

@@ -6,11 +6,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "appstract/laravel-opcache": "^4.0",
         "blade-ui-kit/blade-heroicons": "^2.4",
         "filament/filament": "^3.2",
         "irazasyed/telegram-bot-sdk": "^3.14",
         "laravel/framework": "^11.9",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "maatwebsite/excel": "^3.1",
+        "outerweb/filament-settings": "^1.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -19,7 +22,8 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
         "pestphp/pest": "^2.35",
-        "pestphp/pest-plugin-laravel": "^2.4"
+        "pestphp/pest-plugin-laravel": "^2.4",
+        "phpstan/phpstan": "^1.12"
     },
     "autoload": {
         "psr-4": {

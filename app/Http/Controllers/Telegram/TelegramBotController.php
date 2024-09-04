@@ -14,28 +14,27 @@ class TelegramBotController extends TelegramBotBaseController
 
         $telegram::commandsHandler(true);
 
-        $update = $this->getWebhookUpdate($telegram);
+        $update = $telegram::getWebhookUpdate();
 
-        $type = $this->objectType($update);
-
-        if ('uknown' === $type) {
-
-            Log::error('uknown message type is returned');
-
-            return $this->respondSuccess();
-        }
-
-        if ("StartCommand" === $this->message || "/start" === $this->message) {
-
-            return $this->respondSuccess();
-        }
-
-        match ($type) {
-
-            'message' => MessageFSM::handle($telegram, $this->message, $this->chat_id, $this->callback_query),
-
-            'callback_query' => CallbackQueryFSM::handle($telegram, $this->message, $this->chat_id, $this->callback_query),
+        $telegram::sendChatAction([
+            'chat_id' => $update->getChat()->getId(),
+            'action' => 'typing'
+        ]);
+        
+        $class = match ($update->objectType()) {
+            'message' => MessageFSM::class,
+            'callback_query' => CallbackQueryFSM::class,
+            default => null,
         };
+
+        if ($class === null) {
+
+            Log::error('Unknown message type returned');
+
+            return $this->respondSuccess();
+        }                    
+
+        $class::handle($telegram, $update);
 
         return $this->respondSuccess();
     }
