@@ -3,18 +3,14 @@
 namespace App\Telegram\FSM;
 
 use App\Models\Category;
-use App\Models\SubCategory;
 use App\Telegram\Menu\Menu;
-use Telegram\Bot\Keyboard\Keyboard;
+
 
 class CallbackQueryFSM extends Base
 {
-    protected object $update;
-    protected object $callback_query;
-    protected int $message_id;
-    public static function handle(...$params): self
+    public static function handle(): self
     {
-        $instance = new self(...$params);
+        $instance = new self();
 
         $instance->run();
 
@@ -23,50 +19,36 @@ class CallbackQueryFSM extends Base
 
     public function run(): void
     {
-
-        $this->callback_query = $this->update->getCallbackQuery();
-
         $this->message = json_decode($this->update->getCallbackQuery()->getData());
+
+        if (($this->message === null) || (is_object($this->message) && !property_exists($this->message, 'm'))) {
+
+            $this->editMessageText(Menu::category());
+
+            return;
+        }
 
         $this->chat_id = $this->update->getCallbackQuery()->getMessage()->getChat()->getId();
 
-        $this->message_id = $this->callback_query->getMessage()->message_id;
+        $this->message_id = $this->update->getCallbackQuery()->getMessage()->message_id;
 
         $this->route();
     }
     protected function route(): void
     {
-        // we need to check if the message is null and if it has the property 'm'  
+        // we need to check if the message is null and if it has the property 'm' to avoid errors
 
-        $message = $this->message;
-
-        if ($message === null) {
-
-            $this->editMessageText($this->createEditMessage($this->message_id, 'tanla: ', Menu::category()));
-
-            return;
-        }
-
-        if (is_object($message) && !property_exists($message, 'm')) {
-
-            $this->editMessageText($this->createEditMessage($this->message_id, 'tanla: ', Menu::category()));
-
-
-            return;
-        }
-
-
-        match ($message->m) {
-            'base' => $this->handleBase(),
+        match ($this->message->m) {
+            'base' => $this->base(),
             'C' => $this->handleCategory(),
-            'S' =>$this->handleSubCategory($message),
-            'Q' => $this->handleQuestion($message),
-            'P' => $this->handlePreviousQuestion($message),
-            'W' => $this->handleWrongAnswer(),
-            default => $this->editMessageText(
-                $this->createEditMessage($this->message_id, 'Hozirda Bu boyicha ishlamoqdamiz...!')
-            ),
+            'S' => $this->handleSubCategory($this->message),
+            'Q' => $this->handleQuestion($this->message),
+            'P' => $this->handlePreviousQuestion($this->message),
+            'W' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
+            default => $this->editMessageText(['text' => 'Hozirda Bu boyicha ishlamoqdamiz ...!']),
         };
+
+
     }
 
     protected function handleCategory(): void
@@ -75,7 +57,7 @@ class CallbackQueryFSM extends Base
             'text' => '📚 Sinflar 📚',
         ]);
 
-        $this->editMessageText($this->createEditMessage($this->message_id, '📚 Mavzulashtirilgan Testlar:', Menu::category()));
+        $this->editMessageText(Menu::category());
     }
 
     protected function handleSubCategory(object $message): void
@@ -87,20 +69,24 @@ class CallbackQueryFSM extends Base
             $this->answerCallbackQuery([
                 'text' => $menu['answerCallbackText'],
             ]);
+
         }
 
-        $this->editMessageText($this->createEditMessage($this->message_id, 'Bo\'limlar: ', $menu['keyboard']));
+        $this->editMessageText($menu);
 
     }
 
-    protected function handleBase(): void
+    protected function base(): void
     {
-
         $this->deleteMessage([
             'message_id' => $this->message_id,
         ]);
 
-        $this->sendMessage($this->createMessage('Asosiy Menu:', Menu::base()));
+        $this->answerCallbackQuery([
+            'text' => '🏠 Asosiy Menu',
+        ]);
+
+        $this->sendMessage(Menu::base());
     }
 
     protected function handlePreviousQuestion(object $message): void
@@ -113,7 +99,7 @@ class CallbackQueryFSM extends Base
                 'text' => Category::find($message->c)->title,
             ]);
 
-            $this->editMessageText($this->createEditMessage($this->message_id, "Bo'limlar:", Menu::subcategory($message->c)['keyboard']));
+            $this->editMessageText(Menu::subcategory($message->c));
 
             return;
         }
@@ -123,14 +109,10 @@ class CallbackQueryFSM extends Base
             $this->answerCallbackQuery([
                 'text' => $menu['answerCallbackText'],
             ]);
+
         }
 
-
-
-        $this->editMessageText(
-
-            $this->createEditMessage($this->message_id, $menu['text'], $menu['reply_markup'], $menu['parse_mode'])
-        );
+        $this->editMessageText($menu);
 
     }
     protected function handleQuestion(object $message): void
@@ -149,17 +131,8 @@ class CallbackQueryFSM extends Base
             ]);
         }
 
-        $this->editMessageText(
-            $this->createEditMessage($this->message_id, $menu['text'], $menu['reply_markup'], $menu['parse_mode'])
-        );
+        $this->editMessageText($menu);
     }
 
-    protected function handleWrongAnswer(): void
-    {
-        $this->telegram::answerCallbackQuery([
-            'callback_query_id' => $this->callback_query->getId(),
-            'text' => "Noto'g'ri ❌",
-            'show_alert' => true,
-        ]);
-    }
+
 }

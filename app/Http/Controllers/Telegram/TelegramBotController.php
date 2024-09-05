@@ -2,39 +2,24 @@
 
 namespace App\Http\Controllers\Telegram;
 
+
+use Telegram\Bot\Laravel\Facades\Telegram;
 use App\Telegram\FSM\CallbackQueryFSM;
-use App\Telegram\FSM\MessageFSM;
 use Illuminate\Support\Facades\Log;
+use App\Telegram\FSM\MessageFSM;
+use Illuminate\Http\JsonResponse;
 
 class TelegramBotController extends TelegramBotBaseController
 {
-    public function handleWebhook()
+    public function handleWebhook(): JsonResponse
     {
-        $telegram = $this->telegram;
+        $update = Telegram::commandsHandler(true);
 
-        $telegram::commandsHandler(true);
-
-        $update = $telegram::getWebhookUpdate();
-
-        $telegram::sendChatAction([
-            'chat_id' => $update->getChat()->getId(),
-            'action' => 'typing'
-        ]);
-        
-        $class = match ($update->objectType()) {
-            'message' => MessageFSM::class,
-            'callback_query' => CallbackQueryFSM::class,
-            default => null,
+        match ($update->objectType()) {
+            'message' => MessageFSM::handle(),
+            'callback_query' => CallbackQueryFSM::handle(),
+            default => Log::error('Unknown message type returned'),
         };
-
-        if ($class === null) {
-
-            Log::error('Unknown message type returned');
-
-            return $this->respondSuccess();
-        }                    
-
-        $class::handle($telegram, $update);
 
         return $this->respondSuccess();
     }

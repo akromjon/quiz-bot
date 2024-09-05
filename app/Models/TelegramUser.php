@@ -2,18 +2,39 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 
 class TelegramUser extends BaseModel
 {
     use HasFactory;
 
+    protected function createdAt(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => Carbon::create($value)->format('d.m.Y H:i:s')
+        );
+    }
+
+    protected function lastPaymentDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? Carbon::create($value)->format('d.m.Y H:i:s') : '-'
+        );
+    }
+
+    protected function nextPaymentDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => $value ? Carbon::create($value)->format('d.m.Y H:i:s') : '-'
+        );
+    }
+
     public static function syncUser(Collection $chat): self
     {
-        return self::updateOrCreate(
+        $user = self::updateOrCreate(
             ['user_id' => $chat->id],
             [
                 'username' => $chat->username,
@@ -21,7 +42,15 @@ class TelegramUser extends BaseModel
                 'last_name' => $chat->last_name,
             ]
         );
+
+        $user->update([
+            'status' => 'active'
+        ]);
+
+        return $user;
     }
 
-   
+
+
+
 }

@@ -42,7 +42,8 @@ class TelegramUserResource extends Resource
                 Select::make('tariff')->options([
                     'free' => 'free',
                     'paid' => 'paid',
-                ])
+                ]),
+                TextInput::make('created_at')->readOnly()->required(),
             ]);
     }
 
@@ -64,6 +65,7 @@ class TelegramUserResource extends Resource
                     'free' => 'free',
                     'paid' => 'paid',
                 ])->sortable()->searchable(),
+                TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
             ])
             ->filters([
                 //

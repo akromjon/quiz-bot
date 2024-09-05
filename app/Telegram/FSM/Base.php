@@ -2,65 +2,61 @@
 
 namespace App\Telegram\FSM;
 
+use Telegram\Bot\Laravel\Facades\Telegram;
+use Telegram\Bot\Objects\Update;
 
-abstract class Base implements FSMInterface
+abstract class Base
 {
     protected string $chat_id;
 
-    protected string|null|object $message;    
+    protected int|null $message_id;
 
-    public function __construct(protected object &$telegram, protected object &$update){
+    protected string|null|object $message;
 
+    protected Update $update;
+
+    abstract public static function handle(): self;
+    abstract protected function route(): void;
+    abstract public function run(): void;
+
+    protected function __construct()
+    {
+        $this->update = Telegram::getWebhookUpdate();
     }
+
     protected function sendMessage(array $params): void
     {
         $params['chat_id'] = $this->chat_id;
 
-        $this->telegram::sendMessage($params);
+        Telegram::sendMessage($params);
     }
-    
+
 
     protected function editMessageText(array $params): void
     {
         $params['chat_id'] = $this->chat_id;
 
-        $this->telegram::editMessageText($params);
+        $params['message_id'] = $this->message_id;
+
+        Telegram::editMessageText($params);
     }
 
     protected function answerCallbackQuery(array $params): void
     {
         $params['callback_query_id'] = $this->update->getCallbackQuery()->getId();
 
-        $this->telegram::answerCallbackQuery($params);
+        Telegram::answerCallbackQuery($params);
     }
 
-    protected function deleteMessage(array $params):void{
-        
+    protected function deleteMessage(array $params): void
+    {
         $params['chat_id'] = $this->chat_id;
 
-        $this->telegram::deleteMessage($params);
+        Telegram::deleteMessage($params);
     }
 
-    protected function createMessage(string $text, $replyMarkup = null, string $parseMode = 'HTML'): array
-    {
-        return [
-            'text' => $text,
-            'reply_markup' => $replyMarkup,
-            'parse_mode' => $parseMode,
-        ];
-    }
 
-    protected function createEditMessage(int $message_id,string $text, $replyMarkup = null, string $parseMode = 'HTML'): array
-    {
-        return [
-            'message_id' => $message_id,
-            'text' => $text,
-            'reply_markup' => $replyMarkup,
-            'parse_mode' => $parseMode,
-        ];
-    }
-   
-    abstract public static function handle(...$params): self;
-    abstract protected function route(): void;
+
+
 
 }
