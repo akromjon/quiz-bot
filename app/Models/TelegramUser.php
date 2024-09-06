@@ -32,19 +32,33 @@ class TelegramUser extends BaseModel
         );
     }
 
-    public static function syncUser(Collection $chat): self
+    public static function createOrUpdate(Collection $chat,bool $allow_to_update=false): self
     {
-        $user = self::updateOrCreate(
-            ['user_id' => $chat->id],
-            [
+
+        $user = self::where('user_id', $chat->id)->first();
+
+        if (null===$user) {
+
+            return self::create([
+                'user_id' => $chat->id,
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
-            ]
-        );
+                'status' => 'blocked'
+            ]);
+
+        }
+
+        if (false===$allow_to_update) {
+            
+            return $user;
+
+        }
 
         $user->update([
-            'status' => 'active'
+            'username' => $chat->username,
+            'first_name' => $chat->first_name,
+            'last_name' => $chat->last_name,
         ]);
 
         return $user;

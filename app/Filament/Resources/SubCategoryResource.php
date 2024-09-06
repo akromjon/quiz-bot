@@ -7,6 +7,7 @@ use App\Filament\Resources\SubCategoryResource\RelationManagers;
 use App\Filament\Resources\SubCategoryResource\RelationManagers\CategoryRelationManager;
 use App\Models\SubCategory;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -35,10 +36,11 @@ class SubCategoryResource extends Resource
     {
         return $form
             ->schema([
+                Select::make('category_id')->label('Category')->relationship('category', 'title')->required(),
                 TextInput::make('title')->required(),
+                FileUpload::make('excel_file_path')->label('Excel File')->downloadable(),
+                TextInput::make('sheet_number')->numeric()->default(1),
                 Toggle::make('is_active')->required(),
-                Select::make('category_id')->label('Category')->relationship('category', 'title')->required()
-
             ]);
     }
 
@@ -49,13 +51,14 @@ class SubCategoryResource extends Resource
                 TextColumn::make('id'),
                 TextColumn::make('category.title')->label('Category')->sortable(),
                 TextColumn::make('title'),
+                TextColumn::make('sheet_number'),
                 ToggleColumn::make('is_active')->toggleable(),
             ])
             ->filters([
 
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),                
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

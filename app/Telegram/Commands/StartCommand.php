@@ -16,7 +16,7 @@ class StartCommand extends Command
     {
         $update = Telegram::getWebhookUpdate();
 
-        $user = TelegramUser::syncUser($update->getChat());
+        $user = TelegramUser::createOrUpdate($update->getChat(),true);
 
         $this->replyWithMessage(Menu::base($user));
     }

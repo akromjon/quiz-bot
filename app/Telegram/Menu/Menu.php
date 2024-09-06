@@ -355,7 +355,7 @@ class Menu
     private static function formatQuestion(Question $question): string
     {
         $text = <<<TEXT
-            <b>{$question->subCategory->category->title} - {$question->subCategory->title}</b>\n        
+            <b>{$question->subCategory->category->title}, {$question->subCategory->title}</b>\n        
             {$question->number} - SAVOL:
             {$question->question}\n\n
             TEXT;

@@ -2,15 +2,33 @@
 
 namespace App\Models;
 
+use App\Imports\ImportExcel;
+use App\Imports\QuestionImport;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
-
+use Illuminate\Support\Facades\Storage;
 
 class SubCategory extends BaseModel
 {
     use HasFactory;
+
+    public static function boot(): void
+    {
+        parent::boot();
+
+        static::saved(function ($model) {
+
+            $model->isDirty('excel_file_path') || $model->isDirty('sheet_number') ? static::ImportExcel($model) : null;
+
+            cache()->forget('sub_categories');
+        });
+    }
+
+    protected static function ImportExcel(SubCategory $model)
+    {
+        ImportExcel::run(new QuestionImport($model->id, $model->sheet_number), Storage::path("public/{$model->excel_file_path}"));
+    }
 
     public function category(): BelongsTo
     {
@@ -19,6 +37,8 @@ class SubCategory extends BaseModel
 
     public function scopeActive(Builder $query): void
     {
-        $query->where('is_active',true);
-    } 
+        $query->where('is_active', true);
+    }
+
+
 }
