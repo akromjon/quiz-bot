@@ -40,5 +40,10 @@ class SubCategory extends BaseModel
         $query->where('is_active', true);
     }
 
+    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Question::class)->where('is_active', true)->orderBy('id');
+    }
+
 
 }

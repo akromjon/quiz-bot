@@ -354,9 +354,11 @@ class Menu
 
     private static function formatQuestion(Question $question): string
     {
+        $sub_category = $question->subCategory;
+
         $text = <<<TEXT
-            <b>{$question->subCategory->category->title}, {$question->subCategory->title}</b>\n        
-            {$question->number} - SAVOL:
+            <b>{$sub_category->category->title}, {$sub_category->title}</b>\n        
+            {$question->number}/{$sub_category->questions->count()} - SAVOL:
             {$question->question}\n\n
             TEXT;
         $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
