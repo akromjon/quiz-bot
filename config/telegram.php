@@ -40,10 +40,7 @@ return [
             /*
              * @see https://core.telegram.org/bots/api#update
              */
-            'allowed_updates' => null,
-            'commands' => [
-                StartCommand::class,
-            ],
+            'allowed_updates' => null,           
             'secret_token'=>env('TELEGRAM_BOT_SECRET_TOKEN')
         ],
 

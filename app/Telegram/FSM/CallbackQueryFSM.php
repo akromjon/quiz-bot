@@ -4,40 +4,12 @@ namespace App\Telegram\FSM;
 
 use App\Models\Category;
 use App\Telegram\Menu\Menu;
-
+use Illuminate\Support\Facades\Log;
 
 class CallbackQueryFSM extends Base
-{
-    public static function handle(): self
-    {
-        $instance = new self();
-
-        $instance->run();
-
-        return $instance;
-    }
-
-    public function run(): void
-    {
-        $this->message = json_decode($this->update->getCallbackQuery()->getData());
-
-        if (($this->message === null) || (is_object($this->message) && !property_exists($this->message, 'm'))) {
-
-            $this->editMessageText(Menu::category());
-
-            return;
-        }
-
-        $this->chat_id = $this->update->getCallbackQuery()->getMessage()->getChat()->getId();
-
-        $this->message_id = $this->update->getCallbackQuery()->getMessage()->message_id;
-
-        $this->route();
-    }
+{  
     protected function route(): void
     {
-        // we need to check if the message is null and if it has the property 'm' to avoid errors
-
         match ($this->message->m) {
             'base' => $this->base(),
             'C' => $this->handleCategory(),
@@ -45,10 +17,8 @@ class CallbackQueryFSM extends Base
             'Q' => $this->handleQuestion($this->message),
             'P' => $this->handlePreviousQuestion($this->message),
             'W' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
-            default => $this->editMessageText(['text' => 'Hozirda Bu boyicha ishlamoqdamiz ...!']),
+            default => Log::error('Unknown CallbackQuery type returned'),
         };
-
-
     }
 
     protected function handleCategory(): void
@@ -73,7 +43,6 @@ class CallbackQueryFSM extends Base
         }
 
         $this->editMessageText($menu);
-
     }
 
     protected function base(): void

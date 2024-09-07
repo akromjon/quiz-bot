@@ -23,8 +23,8 @@ class Question extends BaseModel
         return $this->hasMany(QuestionOption::class);
     }
 
-    public function scopeActive(Builder $query): void
+    public function scopeActive(Builder $query): Builder
     {
-        $query->where('is_active',true);
+        return $query->where('is_active',true);
     }
 }

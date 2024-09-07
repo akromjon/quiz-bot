@@ -10,9 +10,14 @@ class Category extends BaseModel
 {
     use HasFactory;
 
-    public function scopeActive(Builder $query): void
+    public function getTrimmedTitleAttribute(): string
     {
-        $query->where('is_active', true);
+        return trim(str_replace('📖', '', $this->title));
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     public static function getCachedCategories(): Collection

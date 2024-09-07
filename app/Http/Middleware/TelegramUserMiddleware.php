@@ -22,6 +22,8 @@ class TelegramUserMiddleware
 
         $user = TelegramUser::createOrUpdate($update->getChat());
 
+        TelegramUser::setCurrentUser($user);
+
         if ($user->status === 'blocked') {
 
             Log::error("User is blocked", $user->toArray());

@@ -2,26 +2,90 @@
 
 namespace App\Telegram\FSM;
 
+use App\Telegram\Menu\Menu;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use Illuminate\Support\Collection;
 use Telegram\Bot\Objects\Update;
 
 abstract class Base
 {
+    protected Collection $file;
     protected string $chat_id;
-
     protected int|null $message_id;
-
     protected string|null|object $message;
-
     protected Update $update;
-
-    abstract public static function handle(): self;
     abstract protected function route(): void;
-    abstract public function run(): void;
 
-    protected function __construct()
+    public static function handle(...$arg): self
+    {
+        $instance = new static(...$arg);
+
+        $instance->run();
+
+        return $instance;
+    }
+
+    public function run(): void
+    {
+        $this->route();
+    }
+    protected function __construct(protected string $message_type)
     {
         $this->update = Telegram::getWebhookUpdate();
+
+        match ($this->message_type) {
+            'callback_query' => $this->handleCallbackQuery(),
+            'message' => $this->handleMessage(),
+            'file' => $this->handleFile(),
+            'command' => $this->handleCommand(),
+            default => null,
+        };
+    }
+
+    protected function handleCommand()
+    {
+        $this->message = $this->update->getMessage()->getText();
+        
+        $this->chat_id = $this->update->getMessage()->getChat()->getId();
+    }
+
+    protected function handleCallbackQuery(): void
+    {
+        $this->message = json_decode($this->update->getCallbackQuery()->getData());
+
+        if (($this->message === null) || (is_object($this->message) && !property_exists($this->message, 'm'))) {
+            $this->editMessageText(Menu::category());
+            return;
+        }
+
+        $this->chat_id = $this->update->getCallbackQuery()->getMessage()->getChat()->getId();
+
+        $this->message_id = $this->update->getCallbackQuery()->getMessage()->message_id;
+    }
+
+    protected function handleMessage(): void
+    {
+        $this->message = $this->update->getMessage()->getText();
+
+        $this->chat_id = $this->update->getMessage()->getChat()->getId();
+
+        $this->message_id = $this->update->getMessage()->message_id;
+    }
+
+    protected function handleFile(): void
+    {
+        $message = $this->update->getMessage();
+
+        if ($message->has('photo')) {
+
+            $this->file = $message->getPhoto();
+
+        } elseif ($message->has('document')) {
+
+            $this->file = $message->getDocument();
+        }
+
+        $this->chat_id = $this->update->getMessage()->getChat()->getId();
     }
 
     protected function sendMessage(array $params): void
@@ -30,6 +94,8 @@ abstract class Base
 
         Telegram::sendMessage($params);
     }
+
+
 
 
     protected function editMessageText(array $params): void

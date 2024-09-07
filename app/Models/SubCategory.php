@@ -35,9 +35,9 @@ class SubCategory extends BaseModel
         return $this->belongsTo(Category::class)->orderBy('id');
     }
 
-    public function scopeActive(Builder $query): void
+    public function scopeActive(Builder $query): Builder
     {
-        $query->where('is_active', true);
+        return $query->where('is_active', true);
     }
 
     public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Question;
 use App\Models\SubCategory;
 use App\Models\TelegramUser;
+use App\Telegram\FSM\FileFSM;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
@@ -14,8 +15,6 @@ class Menu
      * @param string $model, string $id
      * @return array <string, string>
      */
-
-
     private static function getCallbackData(string $model, string $id): array
     {
         return [
@@ -53,7 +52,8 @@ class Menu
             ->setOneTimeKeyboard(true);
     }
 
-    public static function how_bot_works(): array
+
+    public static function howBotWorks(): array
     {
         $text = setting('how_bot_works') ?? 'Bot qanday ishlaydi?';
 
@@ -76,7 +76,7 @@ class Menu
         ];
     }
 
-    public static function profile(int $chat_id): array
+    public static function profile(int|string $chat_id): array
     {
         $keyboard = self::makeInlineKeyboard()
             ->row([
@@ -88,7 +88,7 @@ class Menu
 
         $user = TelegramUser::where('user_id', $chat_id)->first();
 
-        $tarif = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';
+        $tarif = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';        
 
         $text = <<<TEXT
         *👤 Profil:*\n
@@ -97,7 +97,7 @@ class Menu
         📅 Qo'shilgan sana: {$user?->created_at}
         🔋 Tarif Reja: {$tarif}
         💰 Balans: $user->balance so'm
-        ⏳ Keyingi to'lov: $user->next_payment_date
+        🕔 Keyingi to'lov: $user->next_payment_date
         🗓️ Oxirgi to'lov: $user->last_payment_date
         TEXT;
 
@@ -154,15 +154,15 @@ class Menu
             ])
             ->row([
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
-            ])
-            ->row([
-                Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
-                Keyboard::button('ℹ️ Biz Haqimizda')
-            ])
-            ->row([
-                Keyboard::button('👤 Mening Profilim'),
-                Keyboard::button('👨‍💻 Admin'),
             ]);
+        // ->row([
+        //     // Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
+        //     Keyboard::button('ℹ️ Biz Haqimizda')
+        // ])
+        // ->row([
+        //     // Keyboard::button('👤 Mening Profilim'),
+        //     // Keyboard::button('👨‍💻 Admin'),
+        // ]);
 
         return [
             'reply_markup' => $keyboard,
@@ -181,7 +181,7 @@ class Menu
         $keyboard = self::makeInlineKeyboard();
 
         foreach ($categories as $c) {
-            
+
             $callback_data['id'] = $c->id;
 
             $keyboard->row([
@@ -357,7 +357,7 @@ class Menu
         $sub_category = $question->subCategory;
 
         $text = <<<TEXT
-            <b>{$sub_category->category->title}, {$sub_category->title}</b>\n        
+            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n        
             {$question->number}/{$sub_category->questions->count()} - SAVOL:
             {$question->question}\n\n
             TEXT;
@@ -387,6 +387,56 @@ class Menu
         return [
             'text' => "Noto'g'ri ❌",
             'show_alert' => true,
+        ];
+    }
+
+    public static function receipt(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => '🧾 To\'lovni tasdiqlash uchun chek rasmini yoki faylini yuboring 👇',
+            'reply_markup' => $keyboard,
+            'answerCallbackText' => '🧾 Chekni yuboring',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function receiptPending(): array
+    {
+        return [
+            'text' => '🎉 Fayl muvaffaqiyatli yuklandi. Cheklarni ko\'rib chiqish odatda 2-5 daqiqa davom etadi.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function fileTypeNotAllowedMessage(): array
+    {
+        return [
+            'parse_mode' => 'HTML',
+            'text' => 'Faqat: <b>' . implode(', ', FileFSM::$allowed_file_types) . '</b> formatdagi fayllarni yuklashingiz mumkin 🤔'
+        ];
+    }
+
+    public static function fileSizeNotAllowedMessage(): array
+    {
+        return [
+            'parse_mode' => 'HTML',
+            'text' => 'Fayl hajmi 20MB dan oshmasligi kerak 🙁'
+        ];
+    }
+
+    public static function receiptAlreadyExists(): array
+    {
+        return [
+            'text' => 'Sizning hozircha to\'lovni tasdiqlash uchun faylingiz yuborilgan. Iltimos, avvalgi check qarorini kuting.',
+            'parse_mode' => 'HTML',
         ];
     }
 }
