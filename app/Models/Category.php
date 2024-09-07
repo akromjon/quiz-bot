@@ -3,16 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 
 class Category extends BaseModel
 {
     use HasFactory;
 
-    public function scopeActive(Builder $query): void
+    public function getTrimmedTitleAttribute(): string
     {
-        $query->where('is_active', true);
+        return trim(str_replace('📖', '', $this->title));
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     public static function getCachedCategories(): Collection

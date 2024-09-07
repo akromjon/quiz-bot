@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use App\Http\Controllers\Telegram\TelegramBotController;
 use App\Http\Middleware\TelegramMiddleware;
+use App\Http\Middleware\TelegramUserMiddleware;
 use Filament\Facades\Filament;
 
 Route::get('/set-webhook', function () {
@@ -55,4 +56,4 @@ Route::get('/get-webhook-info', function () {
 });
 
 
-Route::post('/bot/JWOaF3FJrqvt4kDYPVlx', [TelegramBotController::class, 'handleWebhook'])->middleware(TelegramMiddleware::class);
+Route::post('/bot/JWOaF3FJrqvt4kDYPVlx', [TelegramBotController::class, 'handleWebhook'])->middleware([TelegramMiddleware::class,TelegramUserMiddleware::class]);

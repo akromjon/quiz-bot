@@ -3,10 +3,10 @@
 namespace App\Telegram\Menu;
 
 use App\Models\Category;
-use App\Models\Level;
 use App\Models\Question;
-use App\Models\QuestionOption;
 use App\Models\SubCategory;
+use App\Models\TelegramUser;
+use App\Telegram\FSM\FileFSM;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
@@ -27,7 +27,7 @@ class Menu
     {
         return [
             Keyboard::inlineButton([
-                'text' => '🏠 Bosh Sahifa',
+                'text' => '🏠 Asosiy Menyu',
                 'callback_data' => json_encode(['m' => 'base', 'id' => '']),
             ]),
             Keyboard::inlineButton([
@@ -37,47 +37,30 @@ class Menu
         ];
     }
 
-    public static function how_bot_works():Keyboard
+    private static function makeInlineKeyboard(): Keyboard
     {
         return Keyboard::make()
             ->inline()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
-            ->row([
-                Keyboard::inlineButton([
-                    'text' => '🏠 Bosh Sahifa',
-                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
-                ]),
-                Keyboard::inlineButton([
-                    'text' => '📤 Admin',
-                    'url' =>setting('admin_username_link') ?? "https://t.me/akrom_n",
-                ]),
-            ]);
+            ->setOneTimeKeyboard(true);
     }
 
-    public static function profile(): Keyboard
+    private static function makeKeyboardButton(): Keyboard
     {
         return Keyboard::make()
-            ->inline()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
-            ->row([
-                Keyboard::inlineButton([
-                    'text' => '🏠 Bosh Sahifa',
-                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
-                ]),
-            ]);
+            ->setOneTimeKeyboard(true);
     }
 
-    public static function admin(): Keyboard
+
+    public static function howBotWorks(): array
     {
-        return Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
+        $text = setting('how_bot_works') ?? 'Bot qanday ishlaydi?';
+
+        $keyboard = self::makeInlineKeyboard()
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '🏠 Bosh Sahifa',
+                    'text' => '🏠 Asosiy Menyu',
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ]),
                 Keyboard::inlineButton([
@@ -85,46 +68,123 @@ class Menu
                     'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
                 ]),
             ]);
+
+        return [
+            'text' => $text,
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function profile(int|string $chat_id): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        $user = TelegramUser::where('user_id', $chat_id)->first();
+
+        $tarif = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';        
+
+        $text = <<<TEXT
+        *👤 Profil:*\n
+        🪪 ID: `$user?->user_id`
+        📝 Ism: {$user?->first_name}
+        📅 Qo'shilgan sana: {$user?->created_at}
+        🔋 Tarif Reja: {$tarif}
+        💰 Balans: $user->balance so'm
+        🕔 Keyingi to'lov: $user->next_payment_date
+        🗓️ Oxirgi to'lov: $user->last_payment_date
+        TEXT;
+
+        return [
+            'text' => $text,
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'Markdown',
+        ];
+    }
+
+    public static function admin(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+                Keyboard::inlineButton([
+                    'text' => '📤 Admin',
+                    'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
+                ]),
+            ]);
+
+        $username = setting('admin_username') ?? '@akrom_n';
+
+        $text = "<b>Assalomu alaykum, Botdan foydalanganiz uchun minnatdormiz ☺️, agar sizda savollar yoki takliflar bo'lsa, marhamat bizga yozishingiz mumkin.\n\nAdmin bilan bog'lanish: {$username}</b>";
+
+
+        return [
+            'text' => $text,
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+        ];
     }
 
 
-    public static function base(): Keyboard
+    public static function base(TelegramUser $telegramUser = null): array
     {
-        return Keyboard::make()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
+        $text = null;
+
+        if ($telegramUser !== null) {
+
+            $text = setting('welcome_message') ?? "Assalomu alaykum, <a href='tg://user?id={$telegramUser->user_id}'>{$telegramUser->first_name}</a>.\nBotga Xush Kelibsiz!";
+
+            $text = str_replace(['GET_USER_ID', 'GET_FIRST_NAME'], [$telegramUser->user_id, $telegramUser->first_name], $text);
+
+        }
+
+        $keyboard = self::makeKeyboardButton()
             ->row([
                 Keyboard::button(['text' => '🆓 Bepul Testlar']),
                 Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
-            ])
-            ->row([
-                Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
-                Keyboard::button('ℹ️ Biz Haqimizda')
-            ])
-            ->row([             
-                Keyboard::button('👤 Mening Profilim'),
-                Keyboard::button('👨‍💻 Admin'),
             ]);
+        // ->row([
+        //     // Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
+        //     Keyboard::button('ℹ️ Biz Haqimizda')
+        // ])
+        // ->row([
+        //     // Keyboard::button('👤 Mening Profilim'),
+        //     // Keyboard::button('👨‍💻 Admin'),
+        // ]);
+
+        return [
+            'reply_markup' => $keyboard,
+            'text' => $text ?? '🏠 Asosiy Menyu 👇',
+            'parse_mode' => 'HTML',
+        ];
     }
 
-    public static function category()
-    {      
+    public static function category(): array
+    {
 
         $categories = Category::getCachedCategories();
 
         $callback_data = self::getCallbackData(SubCategory::class, '');
 
-        $category = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+        $keyboard = self::makeInlineKeyboard();
 
         foreach ($categories as $c) {
+
             $callback_data['id'] = $c->id;
-            $category->row([
+
+            $keyboard->row([
                 Keyboard::inlineButton([
                     'text' => $c->title,
                     'callback_data' => json_encode($callback_data),
@@ -132,9 +192,13 @@ class Menu
             ]);
         }
 
-        $category->row(self::getBackHomeButtons());
+        $keyboard->row(self::getBackHomeButtons());
 
-        return $category;
+        return [
+            'reply_markup' => $keyboard,
+            'text' => '📚 Sinflar',
+            'parse_mode' => 'HTML',
+        ];
     }
 
     public static function subcategory(int $category_id): array
@@ -146,16 +210,13 @@ class Menu
             'c' => $category_id,
         ];
 
-        $subcategory = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+        $keyboard = self::makeInlineKeyboard();
 
         foreach ($subcategories as $c) {
 
             $callback_data['s'] = $c->id;
 
-            $subcategory->row([
+            $keyboard->row([
                 Keyboard::inlineButton([
                     'text' => $c->title . "\xE2\x80\x8B",
                     'callback_data' => json_encode($callback_data),
@@ -165,13 +226,15 @@ class Menu
 
         $callback_data = self::getCallbackData(Category::class, $category_id);
 
-        $subcategory->row(self::getBackHomeButtons($callback_data));
+        $keyboard->row(self::getBackHomeButtons($callback_data));
 
 
 
         return [
-            'keyboard' => $subcategory,
-            'answerCallbackText' => $subcategories?->first()?->category?->title
+            'text' => Category::find($category_id)->title,
+            'reply_markup' => $keyboard,
+            'answerCallbackText' => $subcategories?->first()?->category?->title,
+            'parse_mode' => 'HTML',
         ];
     }
 
@@ -222,7 +285,7 @@ class Menu
 
         $keyboard = self::handleQuestion($question, $sub_category_id, $category_id, true);
 
-        $keyboard['answerCallbackText'] = '🔙 Orqaga';
+        $keyboard['answerCallbackText'] = '⬅️ Orqaga';
 
         return $keyboard;
     }
@@ -263,10 +326,7 @@ class Menu
         ];
 
 
-        $menu = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
+        $keyboard = self::makeInlineKeyboard()
             ->row($keyboards)
             ->row([
                 Keyboard::inlineButton([
@@ -283,28 +343,34 @@ class Menu
 
 
 
-        $text = "<b>{$question->number} - SAVOL:</b>\n\n";
-        $text .= "<b>{$question->question}</b>\n\n";
-
-        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
-
         return [
             'type' => $load_next ? 'edit_message' : 'message',
-            'reply_markup' => $menu,
+            'reply_markup' => $keyboard,
             'parse_mode' => 'HTML',
-            'text' => $text,
+            'text' => self::formatQuestion($question),
             'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
         ];
+    }
+
+    private static function formatQuestion(Question $question): string
+    {
+        $sub_category = $question->subCategory;
+
+        $text = <<<TEXT
+            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n        
+            {$question->number}/{$sub_category->questions->count()} - SAVOL:
+            {$question->question}\n\n
+            TEXT;
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
+
+        return $text;
     }
 
     protected static function handleWhenThereIsNoQuestion(int $category_id): array
     {
         $callback_data = self::getCallbackData(SubCategory::class, $category_id);
 
-        $menu = Keyboard::make()
-            ->inline()
-            ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true)
+        $menu = self::makeInlineKeyboard()
             ->row(self::getBackHomeButtons($callback_data));
 
         return [
@@ -313,6 +379,64 @@ class Menu
             'parse_mode' => 'HTML',
             'text' => "🏁 Testlar Tugadi 🏁",
             'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
+        ];
+    }
+
+    public static function handleWrongAnswer(): array
+    {
+        return [
+            'text' => "Noto'g'ri ❌",
+            'show_alert' => true,
+        ];
+    }
+
+    public static function receipt(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => '🧾 To\'lovni tasdiqlash uchun chek rasmini yoki faylini yuboring 👇',
+            'reply_markup' => $keyboard,
+            'answerCallbackText' => '🧾 Chekni yuboring',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function receiptPending(): array
+    {
+        return [
+            'text' => '🎉 Fayl muvaffaqiyatli yuklandi. Cheklarni ko\'rib chiqish odatda 2-5 daqiqa davom etadi.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function fileTypeNotAllowedMessage(): array
+    {
+        return [
+            'parse_mode' => 'HTML',
+            'text' => 'Faqat: <b>' . implode(', ', FileFSM::$allowed_file_types) . '</b> formatdagi fayllarni yuklashingiz mumkin 🤔'
+        ];
+    }
+
+    public static function fileSizeNotAllowedMessage(): array
+    {
+        return [
+            'parse_mode' => 'HTML',
+            'text' => 'Fayl hajmi 20MB dan oshmasligi kerak 🙁'
+        ];
+    }
+
+    public static function receiptAlreadyExists(): array
+    {
+        return [
+            'text' => 'Sizning hozircha to\'lovni tasdiqlash uchun faylingiz yuborilgan. Iltimos, avvalgi check qarorini kuting.',
+            'parse_mode' => 'HTML',
         ];
     }
 }
