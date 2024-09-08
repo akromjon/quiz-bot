@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TelegramUserResource\Pages;
 use App\Filament\Resources\TelegramUserResource\RelationManagers;
+use App\Filament\Resources\TelegramUserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\TelegramUser;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
@@ -87,7 +88,7 @@ class TelegramUserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            TransactionsRelationManager::class,
         ];
     }
 
