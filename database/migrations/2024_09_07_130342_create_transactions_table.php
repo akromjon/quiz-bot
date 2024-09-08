@@ -17,7 +17,7 @@ return new class extends Migration
             $table->float('amount', 8)->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->dateTime('payment_date')->nullable();
-            $table->foreignId('telegram_user_id')->constrained('telegram_users');
+            $table->foreignId('telegram_user_id')->constrained('telegram_users')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -88,17 +88,20 @@ class Menu
 
         $user = TelegramUser::where('user_id', $chat_id)->first();
 
-        $tarif = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';        
+        $tariff = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';
+
+        $payment=$user->tariff == 'free' ? '❌' : '✅';        
 
         $text = <<<TEXT
         *👤 Profil:*\n
         🪪 ID: `$user?->user_id`
         📝 Ism: {$user?->first_name}
         📅 Qo'shilgan sana: {$user?->created_at}
-        🔋 Tarif Reja: {$tarif}
+        🔋 Tarif Reja: {$tariff}
         💰 Balans: $user->balance so'm
-        🕔 Keyingi to'lov: $user->next_payment_date
+        💵 To'lov: $payment   
         🗓️ Oxirgi to'lov: $user->last_payment_date
+        🕔 Keyingi to'lov: $user->next_payment_date
         TEXT;
 
         return [
@@ -436,6 +439,15 @@ class Menu
     {
         return [
             'text' => 'Sizning hozircha to\'lovni tasdiqlash uchun faylingiz yuborilgan. Iltimos, avvalgi check qarorini kuting.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function receiptApproved(TelegramUser $user): array
+    {
+        return [
+            'chat_id' => $user->user_id,
+            'text' => '✅ To\'lov muvaffaqiyatli amalga oshirildi. Testlarni Boshlashingiz Mumkin 🎉',
             'parse_mode' => 'HTML',
         ];
     }

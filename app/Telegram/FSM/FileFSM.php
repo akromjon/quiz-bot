@@ -13,7 +13,7 @@ use Telegram\Bot\Objects\File;
 
 class FileFSM extends Base
 {
-    protected string $file_path = 'app/public/receipt/';
+    protected string $file_path = '/receipt/';
     protected Collection $file;
     public static array $allowed_file_types = ['jpeg', 'jpg', 'heic', 'png', 'pdf'];
 
@@ -48,7 +48,6 @@ class FileFSM extends Base
         $user->transactions()->create([
             'receipt_path' => $file_path,
             'status' => TransactionStatusEnum::PENDING,
-            'payment_date' => now(),
         ]);
 
         $this->sendMessage(Menu::receiptPending());
@@ -80,11 +79,13 @@ class FileFSM extends Base
     {
         $user = TelegramUser::getCurrentUser();
 
-        $file_path = storage_path("$this->file_path{$user->user_id}_{$file->file_unique_id}.{$file_extension}");
+        $short_path="$this->file_path{$user->user_id}_{$file->file_unique_id}.{$file_extension}";
 
-        Telegram::downloadFile($file->file_id, $file_path);
+        $full_path = storage_path("app/public/{$short_path}");
 
-        return $file_path;
+        Telegram::downloadFile($file->file_id, $full_path);
+
+        return $short_path;
     }
 
 }
