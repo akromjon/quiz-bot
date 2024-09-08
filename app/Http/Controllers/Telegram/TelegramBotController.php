@@ -11,12 +11,14 @@ use Illuminate\Support\Facades\Log;
 use App\Telegram\FSM\MessageFSM;
 use Illuminate\Http\JsonResponse;
 
+
+
 class TelegramBotController extends TelegramBotBaseController
 {
     public function handleWebhook(): JsonResponse
     {
 
-        $type = $this->objectType(Telegram::getWebhookUpdate());
+        $type = $this->objectType(getWebhookUpdate());
 
         match ($type) {
             'message' => MessageFSM::handle($type),

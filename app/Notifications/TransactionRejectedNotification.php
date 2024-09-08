@@ -2,15 +2,15 @@
 
 namespace App\Notifications;
 
+use App\Models\Enums\TelegramUserStatusEnum;
+use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\Transaction;
-use App\Telegram\Menu\Menu;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use App\Telegram\Menu\Menu;
 
-class TransactionApproved extends Notification
+class TransactionRejectedNotification extends Notification
 {
     use Queueable;
 
@@ -36,7 +36,6 @@ class TransactionApproved extends Notification
      * Get the mail representation of the notification.
      */
 
-
     public function toTelegram(Transaction $transaction): void
     {
         // Update user's table: tariff = 'paid', tariff, last_payment_date = now(), next_payment_date = now() + 1 month
@@ -44,20 +43,17 @@ class TransactionApproved extends Notification
         $user = $transaction->telegramUser;
 
         $user->update([
-            'tariff' => 'paid',
-            'status' => 'active',
-            'last_payment_date' => now(),
-            'next_payment_date' => now()->addMonth(),
+            'tariff' => TelegramUserTariffEnum::FREE,
+            'status' => TelegramUserStatusEnum::ACTIVE,            
         ]);
 
 
         // Send a message to the user that the receipt has been approved
         Telegram::sendMessage([...Menu::profile($user->user_id), ...['chat_id' => $user->user_id]]);
-        Telegram::sendMessage(Menu::receiptApproved($user));
+        Telegram::sendMessage(Menu::receiptRejected($user));
         Telegram::sendMessage([...Menu::base(), ...['chat_id' => $user->user_id]]);
 
     }
-
     /**
      * Get the array representation of the notification.
      *

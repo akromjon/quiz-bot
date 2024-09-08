@@ -31,7 +31,7 @@ abstract class Base
     }
     protected function __construct(protected string $message_type)
     {
-        $this->update = Telegram::getWebhookUpdate();
+        $this->update = getWebhookUpdate();
 
         match ($this->message_type) {
             'callback_query' => $this->handleCallbackQuery(),

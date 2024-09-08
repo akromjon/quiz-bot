@@ -38,6 +38,19 @@ class Settings extends BaseSettings
 
                         ]),
 
+                    Tabs\Tab::make('Transaction Settings')
+                        ->schema([
+                            Textarea::make('receipt_approved_message')
+                                ->required()
+                                ->autosize()
+                                ->label('Receipt Approved Message'),
+                            Textarea::make('receipt_rejected_message')
+                                ->required()
+                                ->autosize()
+                                ->label('Receipt Rejected Message'),
+
+                        ]),
+
                 ]),
         ];
     }

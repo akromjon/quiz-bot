@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TelegramUserResource\Pages;
 use App\Filament\Resources\TelegramUserResource\RelationManagers;
 use App\Filament\Resources\TelegramUserResource\RelationManagers\TransactionsRelationManager;
+use App\Models\Enums\TelegramUserStatusEnum;
+use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\TelegramUser;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
@@ -35,15 +37,8 @@ class TelegramUserResource extends Resource
                 TextInput::make('username')->required()->string(),
                 TextInput::make('first_name')->required()->string(),
                 TextInput::make('last_name')->required()->string(),
-                Select::make('status')->options([
-                    'active' => 'active',
-                    'inactive' => 'inactive',
-                    'blocked' => 'blocked',
-                ]),
-                Select::make('tariff')->options([
-                    'free' => 'free',
-                    'paid' => 'paid',
-                ]),
+                Select::make('status')->options(TelegramUserStatusEnum::class)->required(),
+                Select::make('tariff')->options(TelegramUserTariffEnum::class),
                 TextInput::make('created_at')->readOnly()->required(),
             ]);
     }
@@ -57,15 +52,8 @@ class TelegramUserResource extends Resource
                 TextColumn::make('username')->sortable()->searchable(),
                 TextColumn::make('first_name')->sortable()->searchable(),
                 TextColumn::make('last_name')->sortable()->searchable(),
-                SelectColumn::make('status')->options([
-                    'active' => 'active',
-                    'inactive' => 'inactive',
-                    'blocked' => 'blocked',
-                ])->inline()->sortable()->searchable(),
-                SelectColumn::make('tariff')->options([
-                    'free' => 'free',
-                    'paid' => 'paid',
-                ])->sortable()->searchable(),
+                SelectColumn::make('status')->options(TelegramUserStatusEnum::class)->inline()->sortable()->searchable(),
+                SelectColumn::make('tariff')->options(TelegramUserTariffEnum::class)->sortable()->searchable(),
                 TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
             ])
             ->filters([

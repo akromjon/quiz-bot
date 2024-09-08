@@ -25,6 +25,7 @@ return new class extends Migration
             $table->timestamp('last_payment_date')->nullable();
             $table->timestamp('next_payment_date')->nullable();
             $table->float('balance',8)->default(0);
+            $table->index('user_id');
             $table->timestamps();
         });
     }

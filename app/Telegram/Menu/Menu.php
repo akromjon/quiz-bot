@@ -3,6 +3,7 @@
 namespace App\Telegram\Menu;
 
 use App\Models\Category;
+use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\Question;
 use App\Models\SubCategory;
 use App\Models\TelegramUser;
@@ -88,9 +89,9 @@ class Menu
 
         $user = TelegramUser::where('user_id', $chat_id)->first();
 
-        $tariff = $user->tariff == 'free' ? '🆓 Bepul' : '*💎 Pullik*';
+        $tariff = $user->tariff == TelegramUserTariffEnum::FREE ? '🆓 Bepul' : '*💎 Pullik*';
 
-        $payment=$user->tariff == 'free' ? '❌' : '✅';        
+        $payment = $user->tariff == TelegramUserTariffEnum::FREE ? '❌' : '✅';
 
         $text = <<<TEXT
         *👤 Profil:*\n
@@ -221,7 +222,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title . "\xE2\x80\x8B",
+                    'text' => $c->title.": 🔒 ". $c->questions->count() . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -447,7 +448,16 @@ class Menu
     {
         return [
             'chat_id' => $user->user_id,
-            'text' => '✅ To\'lov muvaffaqiyatli amalga oshirildi. Testlarni Boshlashingiz Mumkin 🎉',
+            'text' => setting('receipt_approved_message') ?? '✅ To\'lov tasdiqlandi. Sizning hisobingizga mablag\' qo\'shildi.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function receiptRejected(TelegramUser $user): array
+    {
+        return [
+            'chat_id' => $user->user_id,
+            'text' => setting('receipt_rejected_message') ?? '❌ To\'lov tasdiqlanmadi. Iltimos, qaytadan yuboring.',
             'parse_mode' => 'HTML',
         ];
     }

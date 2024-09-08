@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Enums\TelegramUserStatusEnum;
+use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\Enums\TransactionStatusEnum;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -13,6 +15,14 @@ use Illuminate\Support\Facades\Cache;
 class TelegramUser extends BaseModel
 {
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'tariff' => TelegramUserTariffEnum::class,
+            'status' => TelegramUserStatusEnum::class,
+        ];
+    }
 
     protected function createdAt(): Attribute
     {
@@ -47,7 +57,7 @@ class TelegramUser extends BaseModel
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
-                'status' => 'blocked'
+                'status' => TelegramUserStatusEnum::BLOCKED,
             ]);
 
         }

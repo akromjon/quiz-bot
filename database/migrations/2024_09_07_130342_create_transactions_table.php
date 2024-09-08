@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('receipt_path');
             $table->float('amount', 8)->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('comment')->nullable();
             $table->dateTime('payment_date')->nullable();
             $table->foreignId('telegram_user_id')->constrained('telegram_users')->onDelete('cascade');
             $table->timestamps();

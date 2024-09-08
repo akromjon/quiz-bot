@@ -7,6 +7,7 @@ use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -30,6 +31,7 @@ class TransactionsRelationManager extends RelationManager
                 ->stripCharacters(',')
                 ->numeric()
                 ->required(),
+                Textarea::make('comment')->nullable(),
                 DateTimePicker::make('payment_date')->required()->date(),
                 Select::make('status')->options(TransactionStatusEnum::class),
                 FileUpload::make('receipt_path')->downloadable()->previewable()->image(),
@@ -44,7 +46,7 @@ class TransactionsRelationManager extends RelationManager
                 TextColumn::make('id'),
                 TextColumn::make('amount')->money('UZS'),
                 TextColumn::make('receipt_path')->label('Receipt')->formatStateUsing(function($record){
-                    return "receipt";
+                    return "📄 view";
                 })->url(function($record){
                     return "/storage$record->receipt_path";
                 })->openUrlInNewTab(true),                    
@@ -61,6 +63,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

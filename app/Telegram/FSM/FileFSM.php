@@ -48,6 +48,7 @@ class FileFSM extends Base
         $user->transactions()->create([
             'receipt_path' => $file_path,
             'status' => TransactionStatusEnum::PENDING,
+            'payment_date' => now(),
         ]);
 
         $this->sendMessage(Menu::receiptPending());

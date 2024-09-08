@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if(403===$e->getCode()) {
 
-                $update=Telegram::getWebhookUpdate();
+                $update=getWebhookUpdate();
 
                 $user_id=$update->getChat()->getId();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Enums\TelegramUserStatusEnum;
 use App\Models\TelegramUser;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,13 +19,13 @@ class TelegramUserMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $update = Telegram::getWebhookUpdate();
+        $update = getWebhookUpdate();
 
         $user = TelegramUser::createOrUpdate($update->getChat());
 
         TelegramUser::setCurrentUser($user);
 
-        if ($user->status === 'blocked') {
+        if ($user->status === TelegramUserStatusEnum::BLOCKED) {
 
             Log::error("User is blocked", $user->toArray());
 
