@@ -207,7 +207,7 @@ class Menu
 
     public static function subcategory(int $category_id): array
     {
-        $subcategories = SubCategory::active()->where('category_id', $category_id)->get();
+        $subcategories = SubCategory::active()->with('questions')->where('category_id', $category_id)->get();
 
         $callback_data = [
             'm' => 'Q',

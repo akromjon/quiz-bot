@@ -46,6 +46,7 @@ class FileFSM extends Base
         $user= TelegramUser::getCurrentUser();
 
         $user->transactions()->create([
+            'amount' => setting('tariff_amount') ?? 0,
             'receipt_path' => $file_path,
             'status' => TransactionStatusEnum::PENDING,
             'payment_date' => now(),

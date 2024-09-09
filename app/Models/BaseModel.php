@@ -11,12 +11,12 @@ abstract class BaseModel extends Model
         parent::boot();
 
         static::saved(function () {
-            cache()->forget('categories');
-            cache()->forget('sub_categories');
-            cache()->forget('questions');
-            cache()->forget('question_options');
-            cache()->forget('telegram_users');
-            cache()->forget('users');
+            // cache()->forget('categories');
+            // cache()->forget('sub_categories');
+            // cache()->forget('questions');
+            // cache()->forget('question_options');
+            // cache()->forget('telegram_users');
+            // cache()->forget('users');
         });
     }
 

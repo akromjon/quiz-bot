@@ -6,6 +6,7 @@ use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Support\RawJs;
 use Outerweb\FilamentSettings\Filament\Pages\Settings as BaseSettings;
 
 class Settings extends BaseSettings
@@ -17,24 +18,15 @@ class Settings extends BaseSettings
                 ->schema([
                     Tabs\Tab::make('Bot Settings')
                         ->schema([
-                            TextInput::make('admin_username')
-                                ->label('Admin Username')
-                                ->placeholder('Admin Username')
+                            TextInput::make('tariff_amount')->mask(RawJs::make('$money($input)'))
+                                ->stripCharacters(',')
+                                ->numeric()
+                                ->label('Tariff Amount')
                                 ->required(),
-
-                            TextInput::make('admin_username_link')
-                                ->url()
-                                ->label('Admin Username Link')
-                                ->placeholder('Admin Username Link')
-                                ->required(),
-                            Textarea::make('welcome_message')
-                                ->required()
-                                ->autosize()
-                                ->label('Welcome Message'),
-                            Textarea::make('how_bot_works')
-                                ->required()
-                                ->autosize()
-                                ->label('How Bot Works?'),
+                            TextInput::make('admin_username')->label('Admin Username')->placeholder('Admin Username')->required(),
+                            TextInput::make('admin_username_link')->url()->label('Admin Username Link')->placeholder('Admin Username Link')->required(),
+                            Textarea::make('welcome_message')->required()->autosize()->label('Welcome Message'),
+                            Textarea::make('how_bot_works')->required()->autosize()->label('How Bot Works?'),
 
                         ]),
 

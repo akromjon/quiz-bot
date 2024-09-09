@@ -6,6 +6,7 @@ use App\Http\Controllers\Telegram\TelegramBotController;
 use App\Http\Middleware\TelegramMiddleware;
 use App\Http\Middleware\TelegramUserMiddleware;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Session;
 
 Route::get('/set-webhook', function () {
 
@@ -56,4 +57,6 @@ Route::get('/get-webhook-info', function () {
 });
 
 
-Route::post('/bot/JWOaF3FJrqvt4kDYPVlx', [TelegramBotController::class, 'handleWebhook'])->middleware([TelegramMiddleware::class,TelegramUserMiddleware::class]);
+Route::post('/bot/JWOaF3FJrqvt4kDYPVlx', [TelegramBotController::class, 'handleWebhook'])
+    ->withoutMiddleware(['web'])
+    ->middleware([TelegramMiddleware::class,TelegramUserMiddleware::class]);
