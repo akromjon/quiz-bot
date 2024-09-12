@@ -55,6 +55,7 @@ class TelegramUserResource extends Resource
                 SelectColumn::make('status')->options(TelegramUserStatusEnum::class)->inline()->sortable()->searchable(),
                 SelectColumn::make('tariff')->options(TelegramUserTariffEnum::class)->sortable()->searchable(),
                 TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
+                TextColumn::make('last_used_at')->dateTime()->sortable()->searchable(),
             ])
             ->filters([
                 //

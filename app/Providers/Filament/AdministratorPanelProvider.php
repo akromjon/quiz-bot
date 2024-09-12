@@ -31,7 +31,7 @@ class AdministratorPanelProvider extends PanelProvider
             ->path('administrator')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -43,7 +43,7 @@ class AdministratorPanelProvider extends PanelProvider
                 NavigationGroup::make("Quiz")->icon("heroicon-o-pencil-square"),
                 NavigationGroup::make("Telegram")->icon("heroicon-o-chat-bubble-bottom-center-text"),
 
-            ])            
+            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,

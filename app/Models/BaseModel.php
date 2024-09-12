@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Artisan;
 
 abstract class BaseModel extends Model
 {
@@ -11,12 +12,7 @@ abstract class BaseModel extends Model
         parent::boot();
 
         static::saved(function () {
-            // cache()->forget('categories');
-            // cache()->forget('sub_categories');
-            // cache()->forget('questions');
-            // cache()->forget('question_options');
-            // cache()->forget('telegram_users');
-            // cache()->forget('users');
+            Artisan::call('cache:clear');
         });
     }
 
