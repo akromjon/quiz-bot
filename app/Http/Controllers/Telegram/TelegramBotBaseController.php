@@ -43,13 +43,13 @@ abstract class TelegramBotBaseController extends Controller
         $type = $this->determineMessageType($message, $isRequestingReceipt);
 
         if ($this->isCommand($type, $message)) {
-            
+
             return 'command';
 
         }
 
         if ($this->isNotFile($type)) {
-           
+
             $this->clearLastMessage();
 
         }

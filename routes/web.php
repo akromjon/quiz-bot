@@ -17,7 +17,8 @@ Route::get('/set-webhook', function () {
         ], 403);
     }
 
-    $url = config('app.url') . "/bot/JWOaF3FJrqvt4kDYPVlx";
+    $url = config('app.url') . "/api/bot/JWOaF3FJrqvt4kDYPVlx";
+
 
     $res = Telegram::setWebhook([
         'drop_pending_updates'=> true,
@@ -56,7 +57,3 @@ Route::get('/get-webhook-info', function () {
     return Telegram::getWebhookInfo();
 });
 
-
-Route::post('/bot/JWOaF3FJrqvt4kDYPVlx', [TelegramBotController::class, 'handleWebhook'])
-    ->withoutMiddleware(['web'])
-    ->middleware([TelegramMiddleware::class,TelegramUserMiddleware::class]);

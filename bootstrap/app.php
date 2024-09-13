@@ -4,6 +4,7 @@ use App\Models\TelegramUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Exceptions\TelegramOtherException;
 use Telegram\Bot\Exceptions\TelegramResponseException;
@@ -12,9 +13,10 @@ use Telegram\Bot\Laravel\Facades\Telegram;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
+        api: __DIR__.'/../routes/api.php',
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
@@ -23,21 +25,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
     })
-    
+
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->report(function (TelegramResponseException $e) {
 
-            if(403===$e->getCode()) {
+        $exceptions->render(function (TelegramResponseException $e) {
 
-                $update=getWebhookUpdate();
+            if (403 === $e->getCode()) {
 
-                $user_id=$update->getChat()->getId();
+                $update = getWebhookUpdate();
 
-                if(is_int($user_id)) {
-                    
-                    TelegramUser::where('user_id', $user_id)->update(['status'=>'blocked']);
+                $user_id = $update->getChat()->getId();
+
+                if (is_int($user_id)) {
+
+                    TelegramUser::where('user_id', $user_id)->update(['status' => 'blocked']);
                 }
-                
+
                 Log::error("User $user_id is blocked the bot");
 
                 return response()->json([
@@ -50,8 +53,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // TelegramOtherException
 
-        $exceptions->report(function (TelegramOtherException $e) {
-           
+        $exceptions->render(function (TelegramOtherException $e) {
+
             Log::error($e->getMessage());
 
             return response()->json([
@@ -60,4 +63,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
 
         });
+
+
+
+        $exceptions->render(function ( Exception $e, Request $request) {
+            return response()->json(['message' => 'Invalid order'], 200);
+        });
+
+
     })->create();

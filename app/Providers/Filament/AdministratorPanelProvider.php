@@ -29,7 +29,9 @@ class AdministratorPanelProvider extends PanelProvider
             ->default()
             ->id('administrator')
             ->path('administrator')
+            ->favicon(url('favicon.png'))
             ->login()
+            ->brandLogo(url('logo.png'))
             ->colors([
                 'primary' => Color::Green,
             ])
@@ -45,10 +47,7 @@ class AdministratorPanelProvider extends PanelProvider
 
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
-            ])
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

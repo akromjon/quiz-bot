@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('question');
             $table->unsignedBigInteger('number');
-            $table->string('image')->nullable();
+            $table->string('file')->nullable();
             $table->boolean('is_active')->default(false);
             $table->unsignedBigInteger('sub_category_id')->nullable();
             $table->boolean('is_free')->default(false);

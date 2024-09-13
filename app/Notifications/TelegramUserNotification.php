@@ -33,13 +33,13 @@ class TelegramUserNotification extends Notification
     {
         $users = $this->getUsersBasedOnSendTo($telegramUserNotification);
 
-        if ($users===null) {
-            return;
+        if ($users === null) {
+            throw new \Exception('Invalid send_to value');
         }
 
         foreach ($users as $user) {
             $keyboards = $this->prepareKeyboards($telegramUserNotification);
-            $this->sendMessageOrPhoto($telegramUserNotification, $user, $keyboards);
+            $this->sendMessageOrFile($telegramUserNotification, $user, $keyboards);
         }
     }
 
@@ -47,8 +47,8 @@ class TelegramUserNotification extends Notification
     {
         return match ($telegramUserNotification->send_to) {
             TelegramUserNotificationEnum::ALL => TelegramUser::all(),
-            TelegramUserNotificationEnum::ACTIVE, TelegramUserNotificationEnum::INACTIVE =>TelegramUser::where('status', $telegramUserNotification->send_to)->get(),
-            TelegramUserNotificationEnum::FREE, TelegramUserNotificationEnum::PAID =>TelegramUser::where('tariff', $telegramUserNotification->send_to)->get(),
+            TelegramUserNotificationEnum::ACTIVE, TelegramUserNotificationEnum::INACTIVE => TelegramUser::where('status', $telegramUserNotification->send_to)->get(),
+            TelegramUserNotificationEnum::FREE, TelegramUserNotificationEnum::PAID => TelegramUser::where('tariff', $telegramUserNotification->send_to)->get(),
             default => null,
         };
     }
@@ -65,29 +65,43 @@ class TelegramUserNotification extends Notification
             ->setOneTimeKeyboard(true);
 
         foreach ($telegramUserNotification->params['inlineButtons'] as $button) {
+
+            $params = [
+                'text' => $button['text'],
+            ];
+
+            if (isset($button['url']) && !empty($button['url'])) {
+                $params['url'] = $button['url'];
+            }
+
+            if (isset($button['callback_data']) && !empty($button['callback_data'])) {
+                $params['callback_data'] = $button['callback_data'];
+            }
+
             $keyboards->row([
-                Keyboard::inlineButton([
-                    'text' => $button['text'],
-                    'callback_data' => $button['callback_data'],
-                ])
+                Keyboard::inlineButton($params)
             ]);
         }
 
         return $keyboards;
     }
 
-    private function sendMessageOrPhoto(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
+    private function sendMessageOrFile(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
     {
-        match ($telegramUserNotification->params['photo']) {
-            null => $this->sendMessage($telegramUserNotification, $user, $keyboards),
-            default => $this->sendPhoto($telegramUserNotification, $user, $keyboards),
+
+        match (checkFileType($telegramUserNotification->params['file'])) {
+            'photo' => $this->sendPhoto($telegramUserNotification, $user, $keyboards),
+            'video' => $this->sendVideo($telegramUserNotification, $user, $keyboards),
+            default => $this->sendMessage($telegramUserNotification, $user, $keyboards),
         };
     }
+
+
 
     private function sendPhoto(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
     {
         $params = [
-            'photo' => InputFile::create(asset("storage/{$telegramUserNotification->params['photo']}")),
+            'photo' => InputFile::create(asset("storage/{$telegramUserNotification->params['file']}")),
             'caption' => $telegramUserNotification->params['text'],
             'parse_mode' => 'HTML',
             'chat_id' => $user->user_id,
@@ -99,6 +113,22 @@ class TelegramUserNotification extends Notification
         }
 
         Telegram::sendPhoto($params);
+    }
+
+    private function sendVideo(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
+    {
+        $params = [
+            'video' => InputFile::create(asset("storage/{$telegramUserNotification->params['file']}")),
+            'caption' => $telegramUserNotification->params['text'],
+            'parse_mode' => 'HTML',
+            'chat_id' => $user->user_id,
+        ];
+
+        if ($keyboards) {
+            $params['reply_markup'] = $keyboards;
+        }
+
+        Telegram::sendVideo($params);
     }
 
     private function sendMessage(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void

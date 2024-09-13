@@ -7,7 +7,7 @@ use App\Telegram\Menu\Menu;
 use Illuminate\Support\Facades\Log;
 
 class CallbackQueryFSM extends Base
-{  
+{
     protected function route(): void
     {
         match ($this->message->m) {
@@ -17,6 +17,9 @@ class CallbackQueryFSM extends Base
             'Q' => $this->handleQuestion($this->message),
             'P' => $this->handlePreviousQuestion($this->message),
             'W' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
+            'M' => $this->handleMixQuiz(),
+            'F' => $this->handleFreeQuiz($this->message),
+            'FP' => $this->handleFreeQuiz($this->message, false),
             default => Log::error('Unknown CallbackQuery type returned'),
         };
     }
@@ -27,7 +30,11 @@ class CallbackQueryFSM extends Base
             'text' => '📚 Sinflar 📚',
         ]);
 
-        $this->editMessageText(Menu::category());
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $this->sendMessage(Menu::category());
     }
 
     protected function handleSubCategory(object $message): void
@@ -42,7 +49,11 @@ class CallbackQueryFSM extends Base
 
         }
 
-        $this->editMessageText($menu);
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $this->sendMessage($menu);
     }
 
     protected function base(): void
@@ -62,13 +73,17 @@ class CallbackQueryFSM extends Base
     {
         $menu = Menu::handlePreviousQuestion($message->c, $message->s, $message->q);
 
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
         if ($menu === null) {
 
             $this->answerCallbackQuery([
                 'text' => Category::find($message->c)->title,
             ]);
 
-            $this->editMessageText(Menu::subcategory($message->c));
+            $this->sendMessage(Menu::subcategory($message->c));
 
             return;
         }
@@ -81,7 +96,7 @@ class CallbackQueryFSM extends Base
 
         }
 
-        $this->editMessageText($menu);
+        $this->sendMessageOrFile($menu);
 
     }
     protected function handleQuestion(object $message): void
@@ -100,8 +115,46 @@ class CallbackQueryFSM extends Base
             ]);
         }
 
-        $this->editMessageText($menu);
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $this->sendMessageOrFile($menu);
     }
+
+    protected function handleMixQuiz(): void
+    {
+        $this->answerCallbackQuery([
+            'text' => '🧩 Mix Testlar',
+        ]);
+
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $menu = Menu::handeMixQuiz();
+
+        $this->sendMessageOrFile($menu);
+
+    }
+
+    protected function handleFreeQuiz(object $message, bool $load_next = true): void
+    {
+        $this->answerCallbackQuery([
+            'text' => '🆓 Bepul Testlar',
+        ]);
+
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $menu = Menu::handleFreeQuiz($message->q, $load_next);
+
+        $this->sendMessageOrFile($menu);
+    }
+
+
+
 
 
 }

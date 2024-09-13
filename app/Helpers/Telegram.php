@@ -17,3 +17,18 @@ if (!function_exists('currentTelegramUser')) {
         return TelegramUser::getCurrentUser();
     }
 }
+
+if (!function_exists('checkFileType')) {
+    function checkFileType(?string $file): ?string
+    {
+        $file = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if (in_array($file, ['jpg', 'jpeg', 'png', 'gif']))
+            return 'photo';
+
+        if (in_array($file, ['mp4', 'avi', 'mkv', 'mov']))
+            return 'video';
+
+        return null;
+    }
+}

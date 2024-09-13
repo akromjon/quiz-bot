@@ -26,6 +26,8 @@ class TelegramUserNotificationResource extends Resource
 {
     protected static ?string $model = TelegramUserNotification::class;
 
+    public static ?string $label = 'Notification';
+
     protected static ?string $navigationGroup = "Telegram";
 
 
@@ -37,8 +39,8 @@ class TelegramUserNotificationResource extends Resource
                 Section::make('Params')
                     ->statePath('params')
                     ->schema([
-                        FileUpload::make('photo')->image(),
-                        Textarea::make('text')->autosize(),
+                        FileUpload::make('file')->previewable(false)->openable()->downloadable()->maxSize(20480),
+                        Textarea::make('text')->maxLength(4096)->required()->autosize(),
                         Repeater::make('inlineButtons')
                             ->schema([
                                 TextInput::make('text'),
@@ -56,7 +58,11 @@ class TelegramUserNotificationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable()->searchable(),
-                Tables\Columns\ImageColumn::make('params.photo')->circular()->label('Photo')->sortable(),
+                Tables\Columns\TextColumn::make('params.file')->label('File')->formatStateUsing(function ($record) {
+                    return "📄 View a file";
+                })->url(function ($record) {
+                    return "/storage/" . $record->params['file'];
+                })->openUrlInNewTab(true),
                 Tables\Columns\TextColumn::make('params.text')->limit(20)->label('Text')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('send_to')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
@@ -81,7 +87,7 @@ class TelegramUserNotificationResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])->defaultSort('id', 'desc');
     }
 
     private static function notificationAction(TelegramUserNotification $telegramUserNotification): void

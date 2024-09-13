@@ -100,7 +100,7 @@ class Menu
         📅 Qo'shilgan sana: {$user?->created_at}
         🔋 Tarif Reja: {$tariff}
         💰 Balans: $user->balance so'm
-        💵 To'lov: $payment   
+        💵 To'lov: $payment
         🗓️ Oxirgi to'lov: $user->last_payment_date
         🕔 Keyingi to'lov: $user->next_payment_date
         TEXT;
@@ -169,6 +169,7 @@ class Menu
         // ]);
 
         return [
+            'type' => 'message',
             'reply_markup' => $keyboard,
             'text' => $text ?? '🏠 Asosiy Menyu 👇',
             'parse_mode' => 'HTML',
@@ -222,7 +223,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title.": 🔒 ". $c->questions->count() . " ta test",
+                    'text' => $c->title . ": 🔒 " . $c->questions->count() . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -320,7 +321,7 @@ class Menu
             ]);
         }
 
-        // $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);   
+        // $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);
 
         $callback_data = [
             'm' => 'P',
@@ -346,14 +347,27 @@ class Menu
             ]);
 
 
+        if ($question->file === null) {
+
+            return [
+                'type' => 'message',
+                'reply_markup' => $keyboard,
+                'parse_mode' => 'HTML',
+                'text' => self::formatQuestion($question),
+                'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
+            ];
+        }
 
         return [
-            'type' => $load_next ? 'edit_message' : 'message',
+            'type' => 'file',
             'reply_markup' => $keyboard,
             'parse_mode' => 'HTML',
-            'text' => self::formatQuestion($question),
+            'file' => asset("/storage/{$question->file}"),
+            'caption' => self::formatQuestion($question),
             'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
         ];
+
+
     }
 
     private static function formatQuestion(Question $question): string
@@ -361,7 +375,7 @@ class Menu
         $sub_category = $question->subCategory;
 
         $text = <<<TEXT
-            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n        
+            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n
             {$question->number}/{$sub_category->questions->count()} - SAVOL:
             {$question->question}\n\n
             TEXT;
@@ -460,5 +474,156 @@ class Menu
             'text' => setting('receipt_rejected_message') ?? '❌ To\'lov tasdiqlanmadi. Iltimos, qaytadan yuboring.',
             'parse_mode' => 'HTML',
         ];
+    }
+
+    public static function handeMixQuiz(): array
+    {
+        $randomQuestion = Question::active()->inRandomOrder()->first();
+
+        $keyboards = self::prepareKeyboards($randomQuestion);
+
+        $keyboard = self::makeInlineKeyboard()
+            ->row($keyboards)
+            ->row(self::createFinishTestButton());
+
+        return $randomQuestion->file === null ?
+            self::prepareMessageResponse($randomQuestion, $keyboard) :
+            self::prepareFileResponse($randomQuestion, $keyboard);
+    }
+
+    private static function prepareKeyboards(Question $randomQuestion, string $m = 'M'): array
+    {
+        $letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+
+        $keyboards = [];
+
+        foreach ($randomQuestion->questionOptions as $key => $option) {
+
+            $keyboards[] = Keyboard::inlineButton([
+                'text' => $letters[$key],
+                'callback_data' => json_encode([
+                    'q' => $randomQuestion->id,
+                    'm' => $option->is_answer ? $m : 'W',
+                    'id' => $option->id,
+                ]),
+            ]);
+        }
+
+        return $keyboards;
+    }
+
+    private static function createFinishTestButton(): array
+    {
+        return [
+            Keyboard::inlineButton([
+                'text' => '🏁 Testni Tugatish',
+                'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+            ])
+        ];
+    }
+
+    private static function prepareMessageResponse(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'message',
+            'text' => self::formatQuestion($randomQuestion),
+            'parse_mode' => 'HTML',
+            'reply_markup' => $keyboard,
+        ];
+    }
+
+    private static function prepareFileResponse(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'file',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$randomQuestion->file}"),
+            'caption' => self::formatQuestion($randomQuestion),
+        ];
+    }
+
+    public static function handleFreeQuiz(?int $question_id = null, bool $load_next = true): array
+    {
+
+        if ($load_next) {
+
+            $question = self::handleNextFreeQuiz($question_id);
+
+
+        } else {
+
+            $question = self::handlePreviousFreeQuiz($question_id);
+        }
+
+        if ($load_next && !$question) {
+
+            $keyboard = self::makeInlineKeyboard()
+                ->row([
+                    Keyboard::inlineButton([
+                        'text' => '🏠 Asosiy Menyu',
+                        'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                    ])
+                ]);
+
+
+
+            return [
+                'type' => 'message',
+                'text' => '🏁 Testlar Tugadi 🏁',
+                'parse_mode' => 'HTML',
+                'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => $keyboard->toArray(),
+                    'remove_keyboard' => true
+                ]),
+            ];
+
+        }
+
+        if (!$load_next && !$question) {
+            return self::base();
+        }
+
+        $keyboards = self::prepareKeyboards($question, 'F');
+
+        $keyboard = self::makeInlineKeyboard()
+            ->row($keyboards)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '⬅️ Orqaga',
+                    'callback_data' => json_encode(['m' => 'FP', 'q' => $question->id]),
+                ])
+            ])
+            ->row(self::createFinishTestButton());
+
+        return $question->file === null ?
+            self::prepareMessageResponse($question, $keyboard) :
+            self::prepareFileResponse($question, $keyboard);
+
+
+    }
+
+    private static function handleNextFreeQuiz(?int $question_id = null): ?Question
+    {
+        $question = Question::active()->where('is_free', true)->orderBy('id');
+
+        if ($question_id !== null) {
+
+            $question->where('id', '>', $question_id);
+        }
+
+        $question = $question->first();
+
+        return $question;
+    }
+
+    private static function handlePreviousFreeQuiz(int $question_id): ?Question
+    {
+        return Question::where('is_free', true)
+            ->active()
+            ->orderBy('id')
+            ->where('id', '<', $question_id)
+            ->first();
     }
 }
