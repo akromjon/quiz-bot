@@ -4,22 +4,35 @@ namespace App\Telegram\FSM;
 
 use App\Models\Category;
 use App\Telegram\Menu\Menu;
+use App\Telegram\Middleware\CheckUserIsPaidOrNotMiddleware;
 use Illuminate\Support\Facades\Log;
 
 class CallbackQueryFSM extends Base
 {
     protected function route(): void
     {
+
+        $lets_check = CheckUserIsPaidOrNotMiddleware::handle($this->message->m);
+
+        if (!$lets_check) {
+
+            $this->sendMessage(Menu::handleUnpaidService());
+
+            return;
+        }
+
+
         match ($this->message->m) {
             'base' => $this->base(),
-            'C' => $this->handleCategory(),
-            'S' => $this->handleSubCategory($this->message),
-            'Q' => $this->handleQuestion($this->message),
-            'P' => $this->handlePreviousQuestion($this->message),
+            'C' => $this->handleCategory(), // Category
+            'S' => $this->handleSubCategory($this->message), // SubCategory
+            'Q' => $this->handleQuestion($this->message),  // Question
+            'P' => $this->handlePreviousQuestion($this->message), // Previous Question
             'W' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
-            'M' => $this->handleMixQuiz(),
-            'F' => $this->handleFreeQuiz($this->message),
-            'FP' => $this->handleFreeQuiz($this->message, false),
+            'M' => $this->handleMixQuiz(), // Mix Quiz
+            'F' => $this->handleFreeQuiz($this->message), // Free Quiz
+            'FP' => $this->handleFreeQuiz($this->message, false), // Free Quiz
+            'FW' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
             default => Log::error('Unknown CallbackQuery type returned'),
         };
     }
@@ -39,6 +52,9 @@ class CallbackQueryFSM extends Base
 
     protected function handleSubCategory(object $message): void
     {
+
+
+
         $menu = Menu::subcategory($message->id);
 
         if (array_key_exists('answerCallbackText', $menu)) {

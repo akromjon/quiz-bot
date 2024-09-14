@@ -9,6 +9,7 @@ use App\Models\Enums\TelegramUserStatusEnum;
 use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\TelegramUser;
 use Filament\Forms;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -40,6 +41,15 @@ class TelegramUserResource extends Resource
                 Select::make('status')->options(TelegramUserStatusEnum::class)->required(),
                 Select::make('tariff')->options(TelegramUserTariffEnum::class),
                 TextInput::make('created_at')->readOnly()->required(),
+                TextInput::make('last_used_at')->readOnly()->required(),
+                // last_payment_date
+                // next_payment_date
+
+                TextInput::make('balance')->numeric(),
+                DateTimePicker::make('last_payment_date')->nullable(),
+                DateTimePicker::make('next_payment_date')->nullable(),
+
+
             ]);
     }
 

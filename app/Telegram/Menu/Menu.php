@@ -43,14 +43,14 @@ class Menu
         return Keyboard::make()
             ->inline()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+            ->setOneTimeKeyboard(false);
     }
 
     private static function makeKeyboardButton(): Keyboard
     {
         return Keyboard::make()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+            ->setOneTimeKeyboard(false);
     }
 
 
@@ -73,7 +73,7 @@ class Menu
         return [
             'text' => $text,
             'reply_markup' => $keyboard,
-            'parse_mode' => 'HTML',
+            'parse_mode' => 'Markdown',
         ];
     }
 
@@ -106,6 +106,7 @@ class Menu
         TEXT;
 
         return [
+            'chat_id' => $chat_id,
             'text' => $text,
             'reply_markup' => $keyboard,
             'parse_mode' => 'Markdown',
@@ -153,20 +154,12 @@ class Menu
 
         $keyboard = self::makeKeyboardButton()
             ->row([
-                Keyboard::button(['text' => '🆓 Bepul Testlar']),
+                Keyboard::button('🆓 Bepul Testlar'),
                 Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
             ]);
-        // ->row([
-        //     // Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
-        //     Keyboard::button('ℹ️ Biz Haqimizda')
-        // ])
-        // ->row([
-        //     // Keyboard::button('👤 Mening Profilim'),
-        //     // Keyboard::button('👨‍💻 Admin'),
-        // ]);
 
         return [
             'type' => 'message',
@@ -491,7 +484,7 @@ class Menu
             self::prepareFileResponse($randomQuestion, $keyboard);
     }
 
-    private static function prepareKeyboards(Question $randomQuestion, string $m = 'M'): array
+    private static function prepareKeyboards(Question $randomQuestion, string $m = 'M', string $w = 'W'): array
     {
         $letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
 
@@ -503,7 +496,7 @@ class Menu
                 'text' => $letters[$key],
                 'callback_data' => json_encode([
                     'q' => $randomQuestion->id,
-                    'm' => $option->is_answer ? $m : 'W',
+                    'm' => $option->is_answer ? $m : $w,
                     'id' => $option->id,
                 ]),
             ]);
@@ -556,7 +549,7 @@ class Menu
             $question = self::handlePreviousFreeQuiz($question_id);
         }
 
-        if ($load_next && !$question) {
+        if ($load_next && $question === null) {
 
             $keyboard = self::makeInlineKeyboard()
                 ->row([
@@ -573,10 +566,7 @@ class Menu
                 'text' => '🏁 Testlar Tugadi 🏁',
                 'parse_mode' => 'HTML',
                 'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
-                'reply_markup' => json_encode([
-                    'inline_keyboard' => $keyboard->toArray(),
-                    'remove_keyboard' => true
-                ]),
+                'reply_markup' => $keyboard,
             ];
 
         }
@@ -585,7 +575,7 @@ class Menu
             return self::base();
         }
 
-        $keyboards = self::prepareKeyboards($question, 'F');
+        $keyboards = self::prepareKeyboards($question, 'F', 'FW');
 
         $keyboard = self::makeInlineKeyboard()
             ->row($keyboards)
@@ -625,5 +615,31 @@ class Menu
             ->orderBy('id')
             ->where('id', '<', $question_id)
             ->first();
+    }
+
+    public static function handleUnpaidService(): array
+    {
+        return [
+            'text' => 'Bu xizmat faqat pullik foydalanuvchilar uchun mavjud 🤔',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function notifyUserWhenBalanceIsNotEnough(int $chat_id): array
+    {
+        return [
+            'chat_id' => $chat_id,
+            'text' => 'Balansingizda yetarli mablag\' mavjud emas. Iltimos, balansingizni to\'ldiring.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function notifyUserWhenMoneyIsSubtracted(int $chat_id, int $amount, int $balance): array
+    {
+        return [
+            'chat_id' => $chat_id,
+            'text' => "Balansingizdan {$amount} so'm yechildi. Sizning joriy balansingiz: {$balance} so'm",
+            'parse_mode' => 'HTML',
+        ];
     }
 }

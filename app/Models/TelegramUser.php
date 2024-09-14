@@ -48,9 +48,7 @@ class TelegramUser extends BaseModel
     public static function createOrUpdate(Collection $chat, bool $allow_to_update = false): self
     {
 
-        $user = Cache::rememberForever("current_user_{$chat->id}", function () use ($chat) {
-            return self::where('user_id', $chat->id)->first();
-        });
+        $user = self::where('user_id', $chat->id)->first();
 
         if (null === $user) {
 
