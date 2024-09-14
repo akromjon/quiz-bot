@@ -5,7 +5,9 @@ namespace App\Telegram\FSM;
 use App\Telegram\Menu\Menu;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Illuminate\Support\Collection;
+use Telegram\Bot\Keyboard\Keyboard;
 use Telegram\Bot\Objects\Update;
+use Telegram\Bot\Objects\Message;
 
 abstract class Base
 {
@@ -45,7 +47,7 @@ abstract class Base
     protected function handleCommand()
     {
         $this->message = $this->update->getMessage()->getText();
-        
+
         $this->chat_id = $this->update->getMessage()->getChat()->getId();
     }
 
@@ -54,13 +56,15 @@ abstract class Base
         $this->message = json_decode($this->update->getCallbackQuery()->getData());
 
         if (($this->message === null) || (is_object($this->message) && !property_exists($this->message, 'm'))) {
-            $this->editMessageText(Menu::category());
+            $this->sendMessage(Menu::category());
             return;
         }
 
         $this->chat_id = $this->update->getCallbackQuery()->getMessage()->getChat()->getId();
 
         $this->message_id = $this->update->getCallbackQuery()->getMessage()->message_id;
+
+
     }
 
     protected function handleMessage(): void
@@ -95,18 +99,6 @@ abstract class Base
         Telegram::sendMessage($params);
     }
 
-
-
-
-    protected function editMessageText(array $params): void
-    {
-        $params['chat_id'] = $this->chat_id;
-
-        $params['message_id'] = $this->message_id;
-
-        Telegram::editMessageText($params);
-    }
-
     protected function answerCallbackQuery(array $params): void
     {
         $params['callback_query_id'] = $this->update->getCallbackQuery()->getId();
@@ -120,6 +112,43 @@ abstract class Base
 
         Telegram::deleteMessage($params);
     }
+
+    protected function sendVideo(array $params): void
+    {
+        $params['chat_id'] = $this->chat_id;
+
+        $params['video'] = \Telegram\Bot\FileUpload\InputFile::create($params['file']);
+
+
+        Telegram::sendVideo($params);
+    }
+
+    protected function sendPhoto(array $params): void
+    {
+        $params['chat_id'] = $this->chat_id;
+
+        $params['photo'] = \Telegram\Bot\FileUpload\InputFile::create($params['file']);
+
+        Telegram::sendPhoto($params);
+    }
+
+    protected function sendMessageOrFile(array $menu): void
+    {
+        match ($menu['type']) {
+            'file' => $this->sendVideoOrPhoto($menu),
+            default => $this->sendMessage($menu),
+        };
+    }
+
+    protected function sendVideoOrPhoto(array $menu): void
+    {
+        match (checkFileType($menu['file'])) {
+            'photo' => $this->sendPhoto($menu),
+            'video' => $this->sendVideo($menu),
+            default => $this->sendMessage($menu),
+        };
+    }
+
 
 
 

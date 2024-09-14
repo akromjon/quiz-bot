@@ -42,16 +42,10 @@ class TransactionRejectedNotification extends Notification
 
         $user = $transaction->telegramUser;
 
-        $user->update([
-            'tariff' => TelegramUserTariffEnum::FREE,
-            'status' => TelegramUserStatusEnum::ACTIVE,            
-        ]);
-
-
         // Send a message to the user that the receipt has been approved
-        Telegram::sendMessage([...Menu::profile($user->user_id), ...['chat_id' => $user->user_id]]);
+        Telegram::sendMessage([...Menu::profile($user->user_id)]);
         Telegram::sendMessage(Menu::receiptRejected($user));
-        Telegram::sendMessage([...Menu::base(), ...['chat_id' => $user->user_id]]);
+        Telegram::sendMessage([...Menu::base()]);
 
     }
     /**

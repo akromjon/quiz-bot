@@ -36,7 +36,7 @@ class CommandFSM extends Base
 
             return;
         }
-        
+
         TelegramUser::setLastMessage('chekyuborish');
 
         $this->sendMessage(Menu::receipt());
