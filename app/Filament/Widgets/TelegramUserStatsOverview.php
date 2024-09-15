@@ -13,17 +13,17 @@ class TelegramUserStatsOverview extends BaseWidget
     {
         $total_users = TelegramUser::count();
 
-        $paid_users= TelegramUser::where('tariff', 'paid')->count();
+        $paid_users = TelegramUser::where('tariff', 'paid')->count();
 
         $free_users = TelegramUser::where('tariff', 'free')->count();
 
         return [
-            Stat::make('Total Users', $total_users)
+            Stat::make('👤 Total Users', $total_users)
                 ->color('success'),
-            Stat::make('Paid Users', $paid_users)
+            Stat::make('💎 Paid Users', $paid_users)
                 ->color('success'),
 
-            Stat::make('Free Users', $free_users)
+            Stat::make('🆓 Free Users', $free_users)
                 ->color('success'),
         ];
     }

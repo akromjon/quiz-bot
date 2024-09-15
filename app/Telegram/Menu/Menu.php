@@ -127,9 +127,8 @@ class Menu
                 ]),
             ]);
 
-        $username = setting('admin_username') ?? '@akrom_n';
 
-        $text = "<b>Assalomu alaykum, Botdan foydalanganiz uchun minnatdormiz ☺️, agar sizda savollar yoki takliflar bo'lsa, marhamat bizga yozishingiz mumkin.\n\nAdmin bilan bog'lanish: {$username}</b>";
+        $text = setting('admin_message') ?? 'Admin xabar';
 
 
         return [

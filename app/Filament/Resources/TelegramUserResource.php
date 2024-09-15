@@ -5,9 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TelegramUserResource\Pages;
 use App\Filament\Resources\TelegramUserResource\RelationManagers;
 use App\Filament\Resources\TelegramUserResource\RelationManagers\TransactionsRelationManager;
+use App\Filament\Resources\TelegramUserResource\Widgets\TelegramUserTableWidget;
 use App\Models\Enums\TelegramUserStatusEnum;
 use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\TelegramUser;
+use Filament\Tables\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -20,6 +22,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Artisan;
 
 class TelegramUserResource extends Resource
 {
@@ -61,7 +64,6 @@ class TelegramUserResource extends Resource
                 TextColumn::make('user_id')->sortable()->numeric()->copyable(),
                 TextColumn::make('username')->sortable()->searchable(),
                 TextColumn::make('first_name')->sortable()->searchable(),
-                TextColumn::make('last_name')->sortable()->searchable(),
                 SelectColumn::make('status')->options(TelegramUserStatusEnum::class)->inline()->sortable()->searchable(),
                 SelectColumn::make('tariff')->options(TelegramUserTariffEnum::class)->sortable()->searchable(),
                 TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
@@ -71,6 +73,9 @@ class TelegramUserResource extends Resource
                 //
             ])
             ->actions([
+                // let's add a custom action
+
+                self::getCustomAction(),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -81,7 +86,7 @@ class TelegramUserResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('id', 'desc');
+            ->defaultSort('last_used_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -99,4 +104,17 @@ class TelegramUserResource extends Resource
             'edit' => Pages\EditTelegramUser::route('/{record}/edit'),
         ];
     }
+
+    public static function getCustomAction(): Action
+    {
+        return Action::make(name: 'Update Tariff')
+            ->action(function () {
+                Artisan::call('app:check-user-tariff-command');
+            })
+            ->icon('heroicon-m-play')
+            ->requiresConfirmation()
+            ->color('primary');
+    }
+
+
 }

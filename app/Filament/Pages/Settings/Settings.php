@@ -26,6 +26,7 @@ class Settings extends BaseSettings
                             TextInput::make('admin_username')->label('Admin Username')->placeholder('Admin Username')->required(),
                             TextInput::make('admin_username_link')->url()->label('Admin Username Link')->placeholder('Admin Username Link')->required(),
                             Textarea::make('welcome_message')->required()->autosize()->label('Welcome Message'),
+                            Textarea::make('admin_message')->required()->autosize()->label('Admin Message'),
                             Textarea::make('how_bot_works')->required()->autosize()->label('How Bot Works?'),
 
                         ]),

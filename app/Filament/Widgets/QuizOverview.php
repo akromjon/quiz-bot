@@ -21,11 +21,11 @@ class QuizOverview extends BaseWidget
         $subcategories = SubCategory::count();
 
         return [
-            Stat::make('Total Categories', $categories)
+            Stat::make('📚 Total Categories', $categories)
                 ->color('success'),
-            Stat::make('Total Subcategories', $subcategories)
+            Stat::make('📖 Total Subcategories', $subcategories)
                 ->color('success'),
-            Stat::make('Total Questions', $questions)
+            Stat::make('❓ Total Questions', $questions)
                 ->color('success'),
 
 
