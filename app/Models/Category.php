@@ -26,4 +26,31 @@ class Category extends BaseModel
             return self::active()->get();
         });
     }
+
+    public function subCategories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SubCategory::class)->orderBy('id');
+    }
+
+    public static function boot(): void
+    {
+        parent::boot();
+
+        static::saved(function ($model) {
+
+            if ($model->isDirty('excel_file_path') || $model->isDirty('start_sheet_number') || $model->isDirty('end_sheet_number')) {
+
+                foreach (range($model->start_sheet_number, $model->end_sheet_number) as $sheet_number) {
+
+                    $model->subCategories()->create([
+                        'title' => "{$sheet_number}-BOB",
+                        'excel_file_path' => $model->excel_file_path,
+                        'sheet_number' => $sheet_number,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+        });
+    }
 }

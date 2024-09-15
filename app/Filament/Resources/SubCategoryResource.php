@@ -49,8 +49,8 @@ class SubCategoryResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id'),
-                TextColumn::make('category.title')->label('Category')->sortable(),
-                TextColumn::make('title'),
+                TextColumn::make('category.title')->searchable()->label('Category')->sortable(),
+                TextColumn::make('title')->sortable()->searchable(),
                 TextColumn::make('sheet_number'),
                 ToggleColumn::make('is_active')->toggleable(),
             ])

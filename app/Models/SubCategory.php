@@ -21,11 +21,11 @@ class SubCategory extends BaseModel
 
             $model->isDirty('excel_file_path') || $model->isDirty('sheet_number') ? static::ImportExcel($model) : null;
 
-            cache()->forget('sub_categories');
+            cache()->forget('categories');
         });
     }
 
-    protected static function ImportExcel(SubCategory $model)
+    public static function ImportExcel(SubCategory $model)
     {
         ImportExcel::run(new QuestionImport($model->id, $model->sheet_number), Storage::path("public/{$model->excel_file_path}"));
     }
