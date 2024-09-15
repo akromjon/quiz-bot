@@ -10,6 +10,23 @@ class Category extends BaseModel
 {
     use HasFactory;
 
+    public function subCategories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SubCategory::class)->orderBy('id');
+    }
+
+    public function subCategoriesWithQuestions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SubCategory::class)->with('questions')->withCount('questions')->orderBy('id');
+    }
+
+    public function getQuestionsCountAttribute(): int
+    {
+        return $this->subCategoriesWithQuestions->sum('questions_count');
+    }
+
+
+
     public function getTrimmedTitleAttribute(): string
     {
         return trim(str_replace('📖', '', $this->title));
@@ -23,13 +40,8 @@ class Category extends BaseModel
     public static function getCachedCategories(): Collection
     {
         return cache()->rememberForever('categories', function () {
-            return self::active()->get();
+            return self::with('subCategoriesWithQuestions')->active()->get();
         });
-    }
-
-    public function subCategories(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(SubCategory::class)->orderBy('id');
     }
 
     public static function boot(): void

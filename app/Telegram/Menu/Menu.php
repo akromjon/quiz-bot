@@ -183,7 +183,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title,
+                    'text' => $c->title . ": 🔒 " . $c->questions_count . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -333,7 +333,7 @@ class Menu
             ])
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '🏁 Testni Tugatish',
+                    'text' => '🏁 Testni yakunlash',
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ])
             ]);
@@ -508,7 +508,7 @@ class Menu
     {
         return [
             Keyboard::inlineButton([
-                'text' => '🏁 Testni Tugatish',
+                'text' => '🏁 Testni yakunlash',
                 'callback_data' => json_encode(['m' => 'base', 'id' => '']),
             ])
         ];
@@ -522,6 +522,41 @@ class Menu
             'parse_mode' => 'HTML',
             'reply_markup' => $keyboard,
         ];
+    }
+
+    private static function prepareMessageResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'message',
+            'text' => self::formatQuestionForFreeQuiz($randomQuestion),
+            'parse_mode' => 'HTML',
+            'reply_markup' => $keyboard,
+        ];
+    }
+
+    private static function prepareFileResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'file',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$randomQuestion->file}"),
+            'caption' => self::formatQuestionForFreeQuiz($randomQuestion),
+        ];
+    }
+
+    private static function formatQuestionForFreeQuiz(Question $question): string
+    {
+        $question_order = Question::where('is_free', true)->where('id', '<=', $question->id)->count();
+        $questions_count = Question::where('is_free', true)->count();
+
+        $text = <<<TEXT
+        <b>{$question_order}/{$questions_count}-SAVOL:</b>\n
+        {$question->question}\n\n
+        TEXT;
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
+
+        return $text;
     }
 
     private static function prepareFileResponse(Question $randomQuestion, Keyboard $keyboard): array
@@ -559,10 +594,11 @@ class Menu
                 ]);
 
 
+            $text = setting('free_quiz_finished_message') ?? '🏁 Testlar Tugadi 🏁';
 
             return [
                 'type' => 'message',
-                'text' => '🏁 Testlar Tugadi 🏁',
+                'text' => $text,
                 'parse_mode' => 'HTML',
                 'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
                 'reply_markup' => $keyboard,
@@ -587,8 +623,8 @@ class Menu
             ->row(self::createFinishTestButton());
 
         return $question->file === null ?
-            self::prepareMessageResponse($question, $keyboard) :
-            self::prepareFileResponse($question, $keyboard);
+            self::prepareMessageResponseForFreeQuiz($question, $keyboard) :
+            self::prepareFileResponseForFreeQuiz($question, $keyboard);
 
 
     }

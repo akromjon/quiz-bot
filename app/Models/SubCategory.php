@@ -13,6 +13,11 @@ class SubCategory extends BaseModel
 {
     use HasFactory;
 
+    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Question::class)->where('is_active', true)->orderBy('id');
+    }
+
     public static function boot(): void
     {
         parent::boot();
@@ -40,10 +45,7 @@ class SubCategory extends BaseModel
         return $query->where('is_active', true);
     }
 
-    public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Question::class)->where('is_active', true)->orderBy('id');
-    }
+
 
 
 }
