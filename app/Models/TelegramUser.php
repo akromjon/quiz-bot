@@ -8,11 +8,12 @@ use App\Models\Enums\TransactionStatusEnum;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
 
-class TelegramUser extends BaseModel
+class TelegramUser extends Model
 {
     use HasFactory;
 
@@ -105,7 +106,7 @@ class TelegramUser extends BaseModel
         $user = self::getCurrentUser();
 
 
-        $message=Cache::get("user_{$user->user_id}");
+        $message = Cache::get("user_{$user->user_id}");
 
 
         return $message;
@@ -125,7 +126,12 @@ class TelegramUser extends BaseModel
         return $user->transactions()->where('status', TransactionStatusEnum::PENDING)->exists();
     }
 
+    public static function boot(): void
+    {
+        parent::boot();
 
-
+        static::saved(function () {
+        });
+    }
 
 }

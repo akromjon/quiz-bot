@@ -8,7 +8,7 @@ use App\Notifications\TransactionRejectedNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
-class Transaction extends BaseModel
+class Transaction extends Model
 {
     use HasFactory;
 

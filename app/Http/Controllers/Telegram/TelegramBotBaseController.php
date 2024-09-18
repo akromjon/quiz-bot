@@ -16,6 +16,8 @@ abstract class TelegramBotBaseController extends Controller
         '/admin',
         '/profile',
         '/chekyuborish',
+        '/terms',
+        '/privacy',
     ];
     protected function respondSuccess(): JsonResponse
     {

@@ -44,6 +44,19 @@ class Settings extends BaseSettings
                                 ->label('Receipt Rejected Message'),
 
                         ]),
+                    Tabs\Tab::make('Terms and Conditions & Privacy Policy')
+                        ->schema([
+                            Textarea::make('terms_and_conditions')
+                                ->required()
+                                ->autosize()
+                                ->label('Terms and Conditions'),
+                            Textarea::make('privacy_policy')
+                                ->required()
+                                ->autosize()
+                                ->label('Privacy Policy'),
+
+
+                        ]),
 
                 ]),
         ];

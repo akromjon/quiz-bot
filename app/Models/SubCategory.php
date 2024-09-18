@@ -7,6 +7,7 @@ use App\Imports\QuestionImport;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class SubCategory extends BaseModel
@@ -16,6 +17,13 @@ class SubCategory extends BaseModel
     public function questions(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Question::class)->where('is_active', true)->orderBy('id');
+    }
+
+    public function questionCount(): int
+    {
+        return Cache::rememberForever("question_count_{$this->id}", function () {
+            return $this->questions()->count();
+        });
     }
 
     public static function boot(): void
