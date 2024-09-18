@@ -22,8 +22,12 @@ class CheckUserIsPaidOrNotMiddleware extends BaseMiddleware
         'M',
         '🧩 Mix Testlar'
     ];
-    public static function handle(string $message): bool
+    public static function handle(?string $message): bool
     {
+        if($message === null) {
+            return true;
+        }
+
         if (currentTelegramUser()->tariff === TelegramUserTariffEnum::PAID) {
             return true;
         }

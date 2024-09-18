@@ -240,6 +240,7 @@ class Menu
     protected static function getNextQuestion(int $sub_category_id, int|null $question_id)
     {
         $query = Question::where('sub_category_id', $sub_category_id)
+            ->with('subCategory')
             ->active()
             ->orderBy('id');
 
@@ -461,6 +462,7 @@ class Menu
 
     public static function receiptRejected(TelegramUser $user): array
     {
+
         return [
             'chat_id' => $user->user_id,
             'text' => setting('receipt_rejected_message') ?? '❌ To\'lov tasdiqlanmadi. Iltimos, qaytadan yuboring.',
