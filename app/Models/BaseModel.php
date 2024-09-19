@@ -12,7 +12,7 @@ abstract class BaseModel extends Model
         parent::boot();
 
         static::saved(function () {
-           
+            // Artisan::call('cache:clear');
         });
     }
 

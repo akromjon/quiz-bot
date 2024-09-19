@@ -23,8 +23,31 @@ class MessageFSM extends Base
             '📚 Mavzulashtirilgan Testlar' => $this->sendMessage(Menu::category()),
             '🧩 Mix Testlar' => $this->sendMessageOrFile(Menu::handeMixQuiz()),
             '🆓 Bepul Testlar' => $this->sendMessageOrFile(Menu::handleFreeQuiz()),
+            // 'invoice' => $this->handleInvoice(),
             default => Log::error('Unknown message type returned'),
         };
+    }
+
+    protected function handleInvoice()
+    {
+        $this->sendInvoice([
+
+            "title" => "Tarif", // Product title
+            "description" => "Pullik Tarif sotib olish", // Product description
+            "payload" => json_encode([
+                'user_id' => $this->chat_id,
+                'amount' => 100,
+                'product_id' => 1,
+                'product_name' => 'Test Product',
+            ]), // Product payload, not required for now
+            "currency" => "XTR", // Stars Currency
+            "prices" => [ // Price list
+                [
+                    "label" => "Test Product", // Price label
+                    "amount" => 45, // Price amount
+                ]
+            ]
+        ]);
     }
 
 

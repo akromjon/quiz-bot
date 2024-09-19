@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\SubCategory;
 use App\Models\TelegramUser;
 use App\Telegram\FSM\FileFSM;
+use Illuminate\Support\Facades\Cache;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
@@ -65,7 +66,7 @@ class Menu
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ]),
                 Keyboard::inlineButton([
-                    'text' => '📤 Admin',
+                    'text' => '👨‍💻 Admin',
                     'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
                 ]),
             ]);
@@ -122,7 +123,7 @@ class Menu
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ]),
                 Keyboard::inlineButton([
-                    'text' => '📤 Admin',
+                    'text' => '👨‍💻 Admin',
                     'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
                 ]),
             ]);
@@ -183,7 +184,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title,
+                    'text' => $c->title . ": 🔒 " . $c->questions_count . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -200,7 +201,16 @@ class Menu
 
     public static function subcategory(int $category_id): array
     {
-        $subcategories = SubCategory::active()->with('questions')->where('category_id', $category_id)->get();
+
+        $subcategories = Cache::rememberForever("sub_categories_{$category_id}", function () use ($category_id) {
+
+            return SubCategory::active()
+                ->whereHas('questions')
+                ->with('category')
+                ->withCount('questions')
+                ->where('category_id', $category_id)
+                ->get();
+        });
 
         $callback_data = [
             'm' => 'Q',
@@ -215,7 +225,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title . ": 🔒 " . $c->questions->count() . " ta test",
+                    'text' => $c->title . ": 🔒 " . $c->questions_count . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -228,7 +238,7 @@ class Menu
 
 
         return [
-            'text' => Category::find($category_id)->title,
+            'text' => $subcategories?->first()?->category?->title,
             'reply_markup' => $keyboard,
             'answerCallbackText' => $subcategories?->first()?->category?->title,
             'parse_mode' => 'HTML',
@@ -237,26 +247,33 @@ class Menu
 
 
 
-    protected static function getNextQuestion(int $sub_category_id, int|null $question_id)
+    protected static function getNextQuestion(int $sub_category_id, int|null $question_id): ?Question
     {
-        $query = Question::where('sub_category_id', $sub_category_id)
+
+        $question = Question::where('sub_category_id', $sub_category_id)
+            ->with('questionOptions', 'subCategory.category')
             ->active()
             ->orderBy('id');
 
         if ($question_id !== null) {
 
-            $query->where('id', '>', $question_id);
+            $question->where('id', '>', $question_id);
         }
 
-        return $query->first();
+        return $question->first();
     }
 
 
 
     public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false): array
     {
+        $key = $question_id === null ? "question_{$sub_category_id}_0" : "question_{$sub_category_id}_{$question_id}";
 
-        $question = self::getNextQuestion($sub_category_id, $question_id);
+        $question = Cache::rememberForever($key, function () use ($sub_category_id, $question_id) {
+
+            return self::getNextQuestion($sub_category_id, $question_id);
+
+        });
 
         if (!$question) {
 
@@ -268,12 +285,16 @@ class Menu
 
     public static function handlePreviousQuestion(int $category_id, int $sub_category_id, int $question_id): array|null
     {
-        $question = Question::where('sub_category_id', $sub_category_id)
-            ->active()
-            ->where('id', '<', $question_id)
-            ->orderByDesc('id')
-            ->first();
+        $question = Cache::rememberForever("previous_question_{$sub_category_id}_{$question_id}", function () use ($sub_category_id, $question_id) {
 
+            return Question::where('sub_category_id', $sub_category_id)
+                ->active()
+                ->with('questionOptions', 'subCategory.category')
+                ->where('id', '<', $question_id)
+                ->orderByDesc('id')
+                ->first();
+
+        });
 
         if (!$question) {
 
@@ -333,7 +354,7 @@ class Menu
             ])
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '🏁 Testni Tugatish',
+                    'text' => '🏁 Testni yakunlash',
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ])
             ]);
@@ -366,9 +387,11 @@ class Menu
     {
         $sub_category = $question->subCategory;
 
+        $questions_count = $sub_category->questionCount();
+
         $text = <<<TEXT
             <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n
-            {$question->number}/{$sub_category->questions->count()} - SAVOL:
+            {$question->number}/{$questions_count} - SAVOL:
             {$question->question}\n\n
             TEXT;
         $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
@@ -461,6 +484,7 @@ class Menu
 
     public static function receiptRejected(TelegramUser $user): array
     {
+
         return [
             'chat_id' => $user->user_id,
             'text' => setting('receipt_rejected_message') ?? '❌ To\'lov tasdiqlanmadi. Iltimos, qaytadan yuboring.',
@@ -508,7 +532,7 @@ class Menu
     {
         return [
             Keyboard::inlineButton([
-                'text' => '🏁 Testni Tugatish',
+                'text' => '🏁 Testni yakunlash',
                 'callback_data' => json_encode(['m' => 'base', 'id' => '']),
             ])
         ];
@@ -524,6 +548,50 @@ class Menu
         ];
     }
 
+    private static function prepareMessageResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'message',
+            'text' => self::formatQuestionForFreeQuiz($randomQuestion),
+            'parse_mode' => 'HTML',
+            'reply_markup' => $keyboard,
+        ];
+    }
+
+    private static function prepareFileResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'file',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$randomQuestion->file}"),
+            'caption' => self::formatQuestionForFreeQuiz($randomQuestion),
+        ];
+    }
+
+    private static function formatQuestionForFreeQuiz(Question $question): string
+    {
+        $question_order = Cache::rememberForever("free_question_order_{$question->id}", function () use ($question) {
+
+            return Question::where('is_free', true)->where('id', '<=', $question->id)->count();
+
+        });
+
+        $questions_count = Cache::rememberForever('free_questions_count', function () {
+
+            return Question::where('is_free', true)->count();
+
+        });
+
+        $text = <<<TEXT
+        <b>{$question_order}/{$questions_count}-SAVOL:</b>\n
+        {$question->question}\n\n
+        TEXT;
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
+
+        return $text;
+    }
+
     private static function prepareFileResponse(Question $randomQuestion, Keyboard $keyboard): array
     {
         return [
@@ -537,15 +605,22 @@ class Menu
 
     public static function handleFreeQuiz(?int $question_id = null, bool $load_next = true): array
     {
-
         if ($load_next) {
 
-            $question = self::handleNextFreeQuiz($question_id);
+            $question = Cache::rememberForever("free_question_{$question_id}", function () use ($question_id) {
 
+                return self::getNextFreeQuestion($question_id);
+
+            });
 
         } else {
 
-            $question = self::handlePreviousFreeQuiz($question_id);
+            $question = Cache::rememberForever("previous_free_question_{$question_id}", function () use ($question_id) {
+
+                return self::getPrivousFreeQuestion($question_id);
+
+            });
+
         }
 
         if ($load_next && $question === null) {
@@ -559,10 +634,11 @@ class Menu
                 ]);
 
 
+            $text = setting('free_quiz_finished_message') ?? '🏁 Testlar Tugadi 🏁';
 
             return [
                 'type' => 'message',
-                'text' => '🏁 Testlar Tugadi 🏁',
+                'text' => $text,
                 'parse_mode' => 'HTML',
                 'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
                 'reply_markup' => $keyboard,
@@ -587,15 +663,15 @@ class Menu
             ->row(self::createFinishTestButton());
 
         return $question->file === null ?
-            self::prepareMessageResponse($question, $keyboard) :
-            self::prepareFileResponse($question, $keyboard);
+            self::prepareMessageResponseForFreeQuiz($question, $keyboard) :
+            self::prepareFileResponseForFreeQuiz($question, $keyboard);
 
 
     }
 
-    private static function handleNextFreeQuiz(?int $question_id = null): ?Question
+    private static function getNextFreeQuestion(?int $question_id = null): ?Question
     {
-        $question = Question::active()->where('is_free', true)->orderBy('id');
+        $question = Question::active()->where('is_free', true)->with('questionOptions')->orderBy('id');
 
         if ($question_id !== null) {
 
@@ -607,11 +683,12 @@ class Menu
         return $question;
     }
 
-    private static function handlePreviousFreeQuiz(int $question_id): ?Question
+    private static function getPrivousFreeQuestion(int $question_id): ?Question
     {
         return Question::where('is_free', true)
+            ->with('questionOptions')
             ->active()
-            ->orderBy('id')
+            ->orderBy('id', 'desc')
             ->where('id', '<', $question_id)
             ->first();
     }
@@ -639,6 +716,40 @@ class Menu
             'chat_id' => $chat_id,
             'text' => "Balansingizdan {$amount} so'm yechildi. Sizning joriy balansingiz: {$balance} so'm",
             'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function termsAndConditions(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => setting('terms_and_conditions') ?? 'Foydalanish shartlari',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'Markdown',
+        ];
+    }
+
+    public static function privacyPolicy(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => setting('privacy_policy') ?? 'Maxfiylik siyosati',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'Markdown',
         ];
     }
 }

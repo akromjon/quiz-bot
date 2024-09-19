@@ -28,6 +28,7 @@ class Settings extends BaseSettings
                             Textarea::make('welcome_message')->required()->autosize()->label('Welcome Message'),
                             Textarea::make('admin_message')->required()->autosize()->label('Admin Message'),
                             Textarea::make('how_bot_works')->required()->autosize()->label('How Bot Works?'),
+                            Textarea::make('free_quiz_finished_message')->required()->autosize()->label('Free Quiz Finished Message'),
 
                         ]),
 
@@ -41,6 +42,19 @@ class Settings extends BaseSettings
                                 ->required()
                                 ->autosize()
                                 ->label('Receipt Rejected Message'),
+
+                        ]),
+                    Tabs\Tab::make('Terms and Conditions & Privacy Policy')
+                        ->schema([
+                            Textarea::make('terms_and_conditions')
+                                ->required()
+                                ->autosize()
+                                ->label('Terms and Conditions'),
+                            Textarea::make('privacy_policy')
+                                ->required()
+                                ->autosize()
+                                ->label('Privacy Policy'),
+
 
                         ]),
 

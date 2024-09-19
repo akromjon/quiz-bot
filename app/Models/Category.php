@@ -10,6 +10,23 @@ class Category extends BaseModel
 {
     use HasFactory;
 
+    public function subCategories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SubCategory::class)->orderBy('id');
+    }
+
+    public function subCategoriesWithQuestions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SubCategory::class)->with('questions')->withCount('questions')->orderBy('id');
+    }
+
+    public function getQuestionsCountAttribute(): int
+    {
+        return $this->subCategoriesWithQuestions->sum('questions_count');
+    }
+
+
+
     public function getTrimmedTitleAttribute(): string
     {
         return trim(str_replace('📖', '', $this->title));
@@ -23,7 +40,29 @@ class Category extends BaseModel
     public static function getCachedCategories(): Collection
     {
         return cache()->rememberForever('categories', function () {
-            return self::active()->get();
+            return self::with('subCategoriesWithQuestions')->active()->get();
+        });
+    }
+
+    public static function boot(): void
+    {
+        parent::boot();
+
+        static::saved(function ($model) {
+
+            if ($model->isDirty('excel_file_path') || $model->isDirty('start_sheet_number') || $model->isDirty('end_sheet_number')) {
+
+                foreach (range($model->start_sheet_number, $model->end_sheet_number) as $sheet_number) {
+
+                    $model->subCategories()->create([
+                        'title' => "{$sheet_number}-BOB",
+                        'excel_file_path' => $model->excel_file_path,
+                        'sheet_number' => $sheet_number,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
         });
     }
 }
