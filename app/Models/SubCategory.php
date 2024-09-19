@@ -32,9 +32,11 @@ class SubCategory extends BaseModel
 
         static::saved(function ($model) {
 
-            $model->isDirty('excel_file_path') || $model->isDirty('sheet_number') ? static::ImportExcel($model) : null;
+            if(($model->isDirty('excel_file_path') || $model->isDirty('sheet_number')) && $model->excel_file_path!==null){
 
-            cache()->forget('categories');
+                static::ImportExcel($model);
+            }
+
         });
     }
 

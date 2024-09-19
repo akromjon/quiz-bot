@@ -149,6 +149,13 @@ abstract class Base
         };
     }
 
+    protected function sendInvoice(array $params): void
+    {
+        $params['chat_id'] = $this->chat_id;
+
+        Telegram::sendInvoice($params);
+    }
+
 
 
 
