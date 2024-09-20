@@ -69,11 +69,15 @@ class TelegramUser extends Model
 
         }
 
-        $user->update([
-            'username' => $chat->username,
-            'first_name' => $chat->first_name,
-            'last_name' => $chat->last_name,
-        ]);
+        defer(function () use ($user, $chat) {
+
+            $user->update([
+                'username' => $chat->username,
+                'first_name' => $chat->first_name,
+                'last_name' => $chat->last_name,
+            ]);
+
+        });
 
         return $user;
     }
@@ -132,6 +136,16 @@ class TelegramUser extends Model
 
         static::saved(function () {
         });
+    }
+
+    public function histories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(QuestionHistory::class);
+    }
+
+    public function getHistory(int $sub_category_id): ?QuestionHistory
+    {
+        return $this->histories()->where('sub_category_id', $sub_category_id)->first();
     }
 
 }

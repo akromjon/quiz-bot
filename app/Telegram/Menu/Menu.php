@@ -5,9 +5,11 @@ namespace App\Telegram\Menu;
 use App\Models\Category;
 use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\Question;
+use App\Models\QuestionHistory;
 use App\Models\SubCategory;
 use App\Models\TelegramUser;
 use App\Telegram\FSM\FileFSM;
+use App\Telegram\Middleware\QuestionHistoryMiddleware;
 use Illuminate\Support\Facades\Cache;
 use Telegram\Bot\Keyboard\Keyboard;
 
@@ -281,6 +283,10 @@ class Menu
             return self::handleWhenThereIsNoQuestion($category_id);
         }
 
+        defer(function () use ($sub_category_id, $question_id) {
+            QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: $question_id);
+        });
+
         return self::handleQuestion(question: $question, sub_category_id: $sub_category_id, category_id: $category_id, load_next: $load_next);
     }
 
@@ -301,6 +307,14 @@ class Menu
 
             return null;
         }
+
+        $question_id = $question->id;
+
+        $question_number = $question->number;
+
+        defer(function () use ($sub_category_id, $question_id,$question_number) {
+            QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: $question_number===1 ? null : $question_id);
+        });
 
         $keyboard = self::handleQuestion($question, $sub_category_id, $category_id, true);
 
@@ -751,6 +765,30 @@ class Menu
             'text' => setting('privacy_policy') ?? 'Maxfiylik siyosati',
             'reply_markup' => $keyboard,
             'parse_mode' => 'Markdown',
+        ];
+    }
+
+    public static function userHasHistory(QuestionHistory $history): array
+    {
+        $text = "Sizda avval boshlangan test bor. Davom etasizmi yoki yangitdan boshlasangizmi?";
+
+        $keyboards = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🔄 Yangi test',
+                    'callback_data' => json_encode(['m' => 'R', 's' => $history->sub_category_id,'c'=>$history->subCategory->category_id]),
+                ]),
+                Keyboard::inlineButton([
+                    'text' => '▶️ Davom etish',
+                    'callback_data' => json_encode(['m' => 'Q', 'c' => $history->subCategory->category_id, 's' => $history->sub_category_id, 'q' => $history->question_id]),
+                ]),
+            ]);
+
+
+        return [
+            'type' => 'message',
+            'text' => $text,
+            'reply_markup' => $keyboards,
         ];
     }
 }
