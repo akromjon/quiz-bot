@@ -158,6 +158,7 @@ class Menu
                 Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
+                // Keyboard::button(' 🔍 Izlash'),
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
             ]);
 
