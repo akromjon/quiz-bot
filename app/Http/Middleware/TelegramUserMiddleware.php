@@ -25,9 +25,13 @@ class TelegramUserMiddleware
 
         TelegramUser::setCurrentUser($user);
 
-        TelegramUser::getCurrentUser()->update([
-            'last_used_at' => now(),
-        ]);
+        defer(function(){
+
+            TelegramUser::getCurrentUser()->update([
+                'last_used_at' => now(),
+            ]);
+        });
+
 
         if ($user->status === TelegramUserStatusEnum::BLOCKED) {
 

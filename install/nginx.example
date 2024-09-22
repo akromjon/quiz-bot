@@ -1,0 +1,68 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name biologiya.testhub.uz;
+    root /var/www/biologiya.testhub.uz/public;
+
+    location = / {
+        return 403;
+    }
+
+    # Allow only Cloudflare IP ranges
+    set $allow_request false;
+
+    # Check if the request comes from Cloudflare
+    if ($http_cf_connecting_ip) {
+        set $allow_request true;
+    }
+
+    # Block requests not coming from Cloudflare
+    if ($allow_request = false) {
+        return 403;
+    }
+
+     # Apply authentication to /admin and its sub-paths
+    location /administrator {
+        auth_basic "Restricted Access";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        # Process requests to /admin and sub-paths
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Ensure authentication is applied to /admin/ (with trailing slash)
+    location /administrator/ {
+        auth_basic "Restricted Access";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        # Process requests to /admin/ and sub-paths
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+        # Your regular location configuration goes here
+    }
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+    index index.html index.htm index.php;
+    charset utf-8;
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+

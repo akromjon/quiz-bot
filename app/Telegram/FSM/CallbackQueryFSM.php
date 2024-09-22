@@ -5,6 +5,7 @@ namespace App\Telegram\FSM;
 use App\Models\Category;
 use App\Telegram\Menu\Menu;
 use App\Telegram\Middleware\CheckUserIsPaidOrNotMiddleware;
+use App\Telegram\Middleware\QuestionHistoryMiddleware;
 use Illuminate\Support\Facades\Log;
 
 class CallbackQueryFSM extends Base
@@ -33,6 +34,7 @@ class CallbackQueryFSM extends Base
             'F' => $this->handleFreeQuiz($this->message), // Free Quiz
             'FP' => $this->handleFreeQuiz($this->message, false), // Free Quiz
             'FW' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
+            'R'=>$this->handleQuestionReset($this->message),
             default => Log::error('Unknown CallbackQuery type returned'),
         };
     }
@@ -87,7 +89,11 @@ class CallbackQueryFSM extends Base
 
     protected function handlePreviousQuestion(object $message): void
     {
-        $menu = Menu::handlePreviousQuestion($message->c, $message->s, $message->q);
+        $sub_category_id = $message->s;
+
+        $question_id = $message->q;
+
+        $menu = Menu::handlePreviousQuestion($message->c, $sub_category_id, $question_id);
 
         $this->deleteMessage([
             'message_id' => $this->message_id,
@@ -117,12 +123,7 @@ class CallbackQueryFSM extends Base
     }
     protected function handleQuestion(object $message): void
     {
-        $menu = Menu::question(
-            category_id: $message->c,
-            sub_category_id: $message->s,
-            question_id: property_exists($message, 'q') ? $message->q : null,
-            load_next: property_exists($message, 'q')
-        );
+        $menu = $this->checkIfUserHasHistory($message);
 
         if (array_key_exists('answerCallbackText', $menu)) {
 
@@ -136,6 +137,24 @@ class CallbackQueryFSM extends Base
         ]);
 
         $this->sendMessageOrFile($menu);
+    }
+
+    private function checkIfUserHasHistory(object $message): array
+    {
+        $history = currentTelegramUser()->getHistory($message->s);
+
+        if (!empty($history) && $history->question_id !== null && !property_exists($message, 'q')) {
+
+            return Menu::userHasHistory(history: $history);
+
+        }
+
+        return Menu::question(
+            category_id: $message->c,
+            sub_category_id: $message->s,
+            question_id: property_exists($message, 'q') ? $message->q : null,
+            load_next: property_exists($message, 'q')
+        );
     }
 
     protected function handleMixQuiz(): void
@@ -168,6 +187,29 @@ class CallbackQueryFSM extends Base
 
         $this->sendMessageOrFile($menu);
     }
+
+    protected function handleQuestionReset(object $message): void
+    {
+        $menu= Menu::question(
+            category_id: $message->c,
+            sub_category_id: $message->s,
+            question_id: property_exists($message, 'q') ? $message->q : null,
+            load_next: property_exists($message, 'q')
+        );
+
+        $this->answerCallbackQuery([
+            'text' => '🔄 Testni qayta boshlash',
+        ]);
+
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+        $this->sendMessage($menu);
+    }
+
+
+
 
 
 
