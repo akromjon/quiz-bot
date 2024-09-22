@@ -8,11 +8,12 @@ use App\Models\Enums\TransactionStatusEnum;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
 
-class TelegramUser extends BaseModel
+class TelegramUser extends Model
 {
     use HasFactory;
 
@@ -48,18 +49,18 @@ class TelegramUser extends BaseModel
     public static function createOrUpdate(Collection $chat, bool $allow_to_update = false): self
     {
 
-        $user = Cache::rememberForever("current_user_{$chat->id}", function () use ($chat) {
-            return self::where('user_id', $chat->id)->first();
-        });
+        $user = self::where('user_id', $chat->id)->first();
 
         if (null === $user) {
+
+            $status=config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
 
             return self::create([
                 'user_id' => $chat->id,
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
-                'status' => TelegramUserStatusEnum::BLOCKED,
+                'status' => $status,
             ]);
 
         }
@@ -70,11 +71,15 @@ class TelegramUser extends BaseModel
 
         }
 
-        $user->update([
-            'username' => $chat->username,
-            'first_name' => $chat->first_name,
-            'last_name' => $chat->last_name,
-        ]);
+        defer(function () use ($user, $chat) {
+
+            $user->update([
+                'username' => $chat->username,
+                'first_name' => $chat->first_name,
+                'last_name' => $chat->last_name,
+            ]);
+
+        });
 
         return $user;
     }
@@ -99,16 +104,18 @@ class TelegramUser extends BaseModel
     {
         $user = self::getCurrentUser();
 
-        Cache::rememberForever("user_{$user->user_id}", function () use ($message) {
-            return $message;
-        });
+        Cache::set("user_{$user->user_id}", $message, 180);
     }
 
     public static function getLastMessage(): ?string
     {
         $user = self::getCurrentUser();
 
-        return Cache::get("user_{$user->user_id}");
+
+        $message = Cache::get("user_{$user->user_id}");
+
+
+        return $message;
     }
 
     public static function clearLastMessage(): bool
@@ -125,7 +132,22 @@ class TelegramUser extends BaseModel
         return $user->transactions()->where('status', TransactionStatusEnum::PENDING)->exists();
     }
 
+    public static function boot(): void
+    {
+        parent::boot();
 
+        static::saved(function () {
+        });
+    }
 
+    public function histories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(QuestionHistory::class);
+    }
+
+    public function getHistory(int $sub_category_id): ?QuestionHistory
+    {
+        return $this->histories()->where('sub_category_id', $sub_category_id)->first();
+    }
 
 }

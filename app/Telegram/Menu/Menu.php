@@ -5,9 +5,12 @@ namespace App\Telegram\Menu;
 use App\Models\Category;
 use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\Question;
+use App\Models\QuestionHistory;
 use App\Models\SubCategory;
 use App\Models\TelegramUser;
 use App\Telegram\FSM\FileFSM;
+use App\Telegram\Middleware\QuestionHistoryMiddleware;
+use Illuminate\Support\Facades\Cache;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class Menu
@@ -43,14 +46,14 @@ class Menu
         return Keyboard::make()
             ->inline()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+            ->setOneTimeKeyboard(false);
     }
 
     private static function makeKeyboardButton(): Keyboard
     {
         return Keyboard::make()
             ->setResizeKeyboard(true)
-            ->setOneTimeKeyboard(true);
+            ->setOneTimeKeyboard(false);
     }
 
 
@@ -65,7 +68,7 @@ class Menu
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ]),
                 Keyboard::inlineButton([
-                    'text' => '📤 Admin',
+                    'text' => '👨‍💻 Admin',
                     'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
                 ]),
             ]);
@@ -73,7 +76,7 @@ class Menu
         return [
             'text' => $text,
             'reply_markup' => $keyboard,
-            'parse_mode' => 'HTML',
+            'parse_mode' => 'Markdown',
         ];
     }
 
@@ -100,12 +103,13 @@ class Menu
         📅 Qo'shilgan sana: {$user?->created_at}
         🔋 Tarif Reja: {$tariff}
         💰 Balans: $user->balance so'm
-        💵 To'lov: $payment   
+        💵 To'lov: $payment
         🗓️ Oxirgi to'lov: $user->last_payment_date
         🕔 Keyingi to'lov: $user->next_payment_date
         TEXT;
 
         return [
+            'chat_id' => $chat_id,
             'text' => $text,
             'reply_markup' => $keyboard,
             'parse_mode' => 'Markdown',
@@ -121,14 +125,13 @@ class Menu
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ]),
                 Keyboard::inlineButton([
-                    'text' => '📤 Admin',
+                    'text' => '👨‍💻 Admin',
                     'url' => setting('admin_username_link') ?? "https://t.me/akrom_n",
                 ]),
             ]);
 
-        $username = setting('admin_username') ?? '@akrom_n';
 
-        $text = "<b>Assalomu alaykum, Botdan foydalanganiz uchun minnatdormiz ☺️, agar sizda savollar yoki takliflar bo'lsa, marhamat bizga yozishingiz mumkin.\n\nAdmin bilan bog'lanish: {$username}</b>";
+        $text = setting('admin_message') ?? 'Admin xabar';
 
 
         return [
@@ -153,22 +156,16 @@ class Menu
 
         $keyboard = self::makeKeyboardButton()
             ->row([
-                Keyboard::button(['text' => '🆓 Bepul Testlar']),
+                Keyboard::button('🆓 Bepul Testlar'),
                 Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
+                // Keyboard::button(' 🔍 Izlash'),
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
             ]);
-        // ->row([
-        //     // Keyboard::button('🤔 Bot Qanday Ishlaydi?'),
-        //     Keyboard::button('ℹ️ Biz Haqimizda')
-        // ])
-        // ->row([
-        //     // Keyboard::button('👤 Mening Profilim'),
-        //     // Keyboard::button('👨‍💻 Admin'),
-        // ]);
 
         return [
+            'type' => 'message',
             'reply_markup' => $keyboard,
             'text' => $text ?? '🏠 Asosiy Menyu 👇',
             'parse_mode' => 'HTML',
@@ -190,7 +187,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title,
+                    'text' => $c->title . ": 🔒 " . $c->questions_count . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -207,7 +204,16 @@ class Menu
 
     public static function subcategory(int $category_id): array
     {
-        $subcategories = SubCategory::active()->with('questions')->where('category_id', $category_id)->get();
+
+        $subcategories = Cache::rememberForever("sub_categories_{$category_id}", function () use ($category_id) {
+
+            return SubCategory::active()
+                ->whereHas('questions')
+                ->with('category')
+                ->withCount('questions')
+                ->where('category_id', $category_id)
+                ->get();
+        });
 
         $callback_data = [
             'm' => 'Q',
@@ -222,7 +228,7 @@ class Menu
 
             $keyboard->row([
                 Keyboard::inlineButton([
-                    'text' => $c->title.": 🔒 ". $c->questions->count() . " ta test",
+                    'text' => $c->title . ": 🔒 " . $c->questions_count . " ta test",
                     'callback_data' => json_encode($callback_data),
                 ]),
             ]);
@@ -235,7 +241,7 @@ class Menu
 
 
         return [
-            'text' => Category::find($category_id)->title,
+            'text' => $subcategories?->first()?->category?->title,
             'reply_markup' => $keyboard,
             'answerCallbackText' => $subcategories?->first()?->category?->title,
             'parse_mode' => 'HTML',
@@ -244,48 +250,75 @@ class Menu
 
 
 
-    protected static function getNextQuestion(int $sub_category_id, int|null $question_id)
+    protected static function getNextQuestion(int $sub_category_id, int|null $question_id): ?Question
     {
-        $query = Question::where('sub_category_id', $sub_category_id)
+
+        $question = Question::where('sub_category_id', $sub_category_id)
+            ->with('questionOptions', 'subCategory.category')
             ->active()
             ->orderBy('id');
 
         if ($question_id !== null) {
 
-            $query->where('id', '>', $question_id);
+            $question->where('id', '>', $question_id);
         }
 
-        return $query->first();
+        return $question->first();
     }
 
 
 
     public static function question(int $category_id, int $sub_category_id, int $question_id = null, bool $load_next = false): array
     {
+        $key = $question_id === null ? "question_{$sub_category_id}_0" : "question_{$sub_category_id}_{$question_id}";
 
-        $question = self::getNextQuestion($sub_category_id, $question_id);
+        $question = Cache::rememberForever($key, function () use ($sub_category_id, $question_id) {
+
+            return self::getNextQuestion($sub_category_id, $question_id);
+
+        });
 
         if (!$question) {
 
+            defer(function () use ($sub_category_id) {
+                QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: null);
+            });
+
             return self::handleWhenThereIsNoQuestion($category_id);
         }
+
+        defer(function () use ($sub_category_id, $question_id) {
+            QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: $question_id);
+        });
 
         return self::handleQuestion(question: $question, sub_category_id: $sub_category_id, category_id: $category_id, load_next: $load_next);
     }
 
     public static function handlePreviousQuestion(int $category_id, int $sub_category_id, int $question_id): array|null
     {
-        $question = Question::where('sub_category_id', $sub_category_id)
-            ->active()
-            ->where('id', '<', $question_id)
-            ->orderByDesc('id')
-            ->first();
+        $question = Cache::rememberForever("previous_question_{$sub_category_id}_{$question_id}", function () use ($sub_category_id, $question_id) {
 
+            return Question::where('sub_category_id', $sub_category_id)
+                ->active()
+                ->with('questionOptions', 'subCategory.category')
+                ->where('id', '<', $question_id)
+                ->orderByDesc('id')
+                ->first();
+
+        });
 
         if (!$question) {
 
             return null;
         }
+
+        $question_id = $question->id;
+
+        $question_number = $question->number;
+
+        defer(function () use ($sub_category_id, $question_id,$question_number) {
+            QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: $question_number===1 ? null : $question_id);
+        });
 
         $keyboard = self::handleQuestion($question, $sub_category_id, $category_id, true);
 
@@ -320,7 +353,7 @@ class Menu
             ]);
         }
 
-        // $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);   
+        // $callback_data = self::getCallbackData(SubCategory::class,(string)$sub_category_id);
 
         $callback_data = [
             'm' => 'P',
@@ -340,29 +373,44 @@ class Menu
             ])
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '🏁 Testni Tugatish',
+                    'text' => '🏁 Testni yakunlash',
                     'callback_data' => json_encode(['m' => 'base', 'id' => '']),
                 ])
             ]);
 
 
+        if ($question->file === null) {
+
+            return [
+                'type' => 'message',
+                'reply_markup' => $keyboard,
+                'parse_mode' => 'HTML',
+                'text' => self::formatQuestion($question),
+                'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
+            ];
+        }
 
         return [
-            'type' => $load_next ? 'edit_message' : 'message',
+            'type' => 'file',
             'reply_markup' => $keyboard,
             'parse_mode' => 'HTML',
-            'text' => self::formatQuestion($question),
+            'file' => asset("/storage/{$question->file}"),
+            'caption' => self::formatQuestion($question),
             'answerCallbackText' => $load_next ? "To'g'ri ✅" : '🤞 Omad 🤞'
         ];
+
+
     }
 
     private static function formatQuestion(Question $question): string
     {
         $sub_category = $question->subCategory;
 
+        $questions_count = $sub_category->questionCount();
+
         $text = <<<TEXT
-            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n        
-            {$question->number}/{$sub_category->questions->count()} - SAVOL:
+            <b>{$sub_category->category->trimmed_title}, {$sub_category->title}</b>\n
+            {$question->number}/{$questions_count} - SAVOL:
             {$question->question}\n\n
             TEXT;
         $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
@@ -455,10 +503,296 @@ class Menu
 
     public static function receiptRejected(TelegramUser $user): array
     {
+
         return [
             'chat_id' => $user->user_id,
             'text' => setting('receipt_rejected_message') ?? '❌ To\'lov tasdiqlanmadi. Iltimos, qaytadan yuboring.',
             'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function handeMixQuiz(): array
+    {
+        $randomQuestion = Question::active()->inRandomOrder()->first();
+
+        $keyboards = self::prepareKeyboards($randomQuestion);
+
+        $keyboard = self::makeInlineKeyboard()
+            ->row($keyboards)
+            ->row(self::createFinishTestButton());
+
+        return $randomQuestion->file === null ?
+            self::prepareMessageResponse($randomQuestion, $keyboard) :
+            self::prepareFileResponse($randomQuestion, $keyboard);
+    }
+
+    private static function prepareKeyboards(Question $randomQuestion, string $m = 'M', string $w = 'W'): array
+    {
+        $letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+
+        $keyboards = [];
+
+        foreach ($randomQuestion->questionOptions as $key => $option) {
+
+            $keyboards[] = Keyboard::inlineButton([
+                'text' => $letters[$key],
+                'callback_data' => json_encode([
+                    'q' => $randomQuestion->id,
+                    'm' => $option->is_answer ? $m : $w,
+                    'id' => $option->id,
+                ]),
+            ]);
+        }
+
+        return $keyboards;
+    }
+
+    private static function createFinishTestButton(): array
+    {
+        return [
+            Keyboard::inlineButton([
+                'text' => '🏁 Testni yakunlash',
+                'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+            ])
+        ];
+    }
+
+    private static function prepareMessageResponse(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'message',
+            'text' => self::formatQuestion($randomQuestion),
+            'parse_mode' => 'HTML',
+            'reply_markup' => $keyboard,
+        ];
+    }
+
+    private static function prepareMessageResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'message',
+            'text' => self::formatQuestionForFreeQuiz($randomQuestion),
+            'parse_mode' => 'HTML',
+            'reply_markup' => $keyboard,
+        ];
+    }
+
+    private static function prepareFileResponseForFreeQuiz(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'file',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$randomQuestion->file}"),
+            'caption' => self::formatQuestionForFreeQuiz($randomQuestion),
+        ];
+    }
+
+    private static function formatQuestionForFreeQuiz(Question $question): string
+    {
+        $question_order = Cache::rememberForever("free_question_order_{$question->id}", function () use ($question) {
+
+            return Question::where('is_free', true)->where('id', '<=', $question->id)->count();
+
+        });
+
+        $questions_count = Cache::rememberForever('free_questions_count', function () {
+
+            return Question::where('is_free', true)->count();
+
+        });
+
+        $text = <<<TEXT
+        <b>{$question_order}/{$questions_count}-SAVOL:</b>\n
+        {$question->question}\n\n
+        TEXT;
+        $text .= implode("\n", $question->questionOptions->pluck('option')->toArray());
+
+        return $text;
+    }
+
+    private static function prepareFileResponse(Question $randomQuestion, Keyboard $keyboard): array
+    {
+        return [
+            'type' => 'file',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$randomQuestion->file}"),
+            'caption' => self::formatQuestion($randomQuestion),
+        ];
+    }
+
+    public static function handleFreeQuiz(?int $question_id = null, bool $load_next = true): array
+    {
+        if ($load_next) {
+
+            $question = Cache::rememberForever("free_question_{$question_id}", function () use ($question_id) {
+
+                return self::getNextFreeQuestion($question_id);
+
+            });
+
+        } else {
+
+            $question = Cache::rememberForever("previous_free_question_{$question_id}", function () use ($question_id) {
+
+                return self::getPrivousFreeQuestion($question_id);
+
+            });
+
+        }
+
+        if ($load_next && $question === null) {
+
+            $keyboard = self::makeInlineKeyboard()
+                ->row([
+                    Keyboard::inlineButton([
+                        'text' => '🏠 Asosiy Menyu',
+                        'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                    ])
+                ]);
+
+
+            $text = setting('free_quiz_finished_message') ?? '🏁 Testlar Tugadi 🏁';
+
+            return [
+                'type' => 'message',
+                'text' => $text,
+                'parse_mode' => 'HTML',
+                'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
+                'reply_markup' => $keyboard,
+            ];
+
+        }
+
+        if (!$load_next && !$question) {
+            return self::base();
+        }
+
+        $keyboards = self::prepareKeyboards($question, 'F', 'FW');
+
+        $keyboard = self::makeInlineKeyboard()
+            ->row($keyboards)
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '⬅️ Orqaga',
+                    'callback_data' => json_encode(['m' => 'FP', 'q' => $question->id]),
+                ])
+            ])
+            ->row(self::createFinishTestButton());
+
+        return $question->file === null ?
+            self::prepareMessageResponseForFreeQuiz($question, $keyboard) :
+            self::prepareFileResponseForFreeQuiz($question, $keyboard);
+
+
+    }
+
+    private static function getNextFreeQuestion(?int $question_id = null): ?Question
+    {
+        $question = Question::active()->where('is_free', true)->with('questionOptions')->orderBy('id');
+
+        if ($question_id !== null) {
+
+            $question->where('id', '>', $question_id);
+        }
+
+        $question = $question->first();
+
+        return $question;
+    }
+
+    private static function getPrivousFreeQuestion(int $question_id): ?Question
+    {
+        return Question::where('is_free', true)
+            ->with('questionOptions')
+            ->active()
+            ->orderBy('id', 'desc')
+            ->where('id', '<', $question_id)
+            ->first();
+    }
+
+    public static function handleUnpaidService(): array
+    {
+        return [
+            'text' => 'Bu xizmat faqat pullik foydalanuvchilar uchun mavjud 🤔',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function notifyUserWhenBalanceIsNotEnough(int $chat_id): array
+    {
+        return [
+            'chat_id' => $chat_id,
+            'text' => 'Balansingizda yetarli mablag\' mavjud emas. Iltimos, balansingizni to\'ldiring.',
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function notifyUserWhenMoneyIsSubtracted(int $chat_id, int $amount, int $balance): array
+    {
+        return [
+            'chat_id' => $chat_id,
+            'text' => "Balansingizdan {$amount} so'm yechildi. Sizning joriy balansingiz: {$balance} so'm",
+            'parse_mode' => 'HTML',
+        ];
+    }
+
+    public static function termsAndConditions(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => setting('terms_and_conditions') ?? 'Foydalanish shartlari',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'Markdown',
+        ];
+    }
+
+    public static function privacyPolicy(): array
+    {
+        $keyboard = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🏠 Asosiy Menyu',
+                    'callback_data' => json_encode(['m' => 'base', 'id' => '']),
+                ]),
+            ]);
+
+        return [
+            'text' => setting('privacy_policy') ?? 'Maxfiylik siyosati',
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'Markdown',
+        ];
+    }
+
+    public static function userHasHistory(QuestionHistory $history): array
+    {
+        $text = "Sizda avval boshlangan test bor. Boshidan boshlaysizmi yoki davom etasizmi?";
+
+        $keyboards = self::makeInlineKeyboard()
+            ->row([
+                Keyboard::inlineButton([
+                    'text' => '🔄 Boshidan boshlash',
+                    'callback_data' => json_encode(['m' => 'R', 's' => $history->sub_category_id,'c'=>$history->subCategory->category_id]),
+                ]),
+                Keyboard::inlineButton([
+                    'text' => '▶️ Davom etish',
+                    'callback_data' => json_encode(['m' => 'Q', 'c' => $history->subCategory->category_id, 's' => $history->sub_category_id, 'q' => $history->question_id]),
+                ]),
+            ]);
+
+
+        return [
+            'type' => 'message',
+            'text' => $text,
+            'reply_markup' => $keyboards,
         ];
     }
 }

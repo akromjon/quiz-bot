@@ -16,6 +16,8 @@ abstract class TelegramBotBaseController extends Controller
         '/admin',
         '/profile',
         '/chekyuborish',
+        '/terms',
+        '/privacy',
     ];
     protected function respondSuccess(): JsonResponse
     {
@@ -43,13 +45,13 @@ abstract class TelegramBotBaseController extends Controller
         $type = $this->determineMessageType($message, $isRequestingReceipt);
 
         if ($this->isCommand($type, $message)) {
-            
+
             return 'command';
 
         }
 
         if ($this->isNotFile($type)) {
-           
+
             $this->clearLastMessage();
 
         }

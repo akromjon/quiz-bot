@@ -39,7 +39,7 @@ class QuestionResource extends Resource
                 Fieldset::make('Add a question')
                     ->schema([
                         Select::make('sub_category_id')->relationship('subCategory', 'title')->label('Sub Categoty'),
-                        FileUpload::make('image')->label('Image'),
+                        FileUpload::make('file')->maxSize(20480)->label('File'),
                         TextInput::make('question')->label("Question")->required(),
                     ])
                     ->live()
@@ -77,7 +77,7 @@ class QuestionResource extends Resource
 
                         return $title;
                     }),
-                ImageColumn::make('image')->circular(),
+                ImageColumn::make('file')->circular(),
                 TextColumn::make('question')->sortable()->searchable(),
                 ToggleColumn::make('is_active')->sortable()->searchable(),
                 ToggleColumn::make('is_free')->sortable()->searchable(),

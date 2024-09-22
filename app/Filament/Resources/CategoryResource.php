@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Symfony\Component\Console\Input\Input;
 use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\FileUpload;
 use Filament\Tables\Actions\SelectAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -39,6 +40,9 @@ class CategoryResource extends Resource
                 Fieldset::make('Add a Category')
                     ->schema([
                         TextInput::make('title')->required(),
+                        FileUpload::make('excel_file_path')->label('Excel File')->openable()->downloadable(),
+                        TextInput::make('start_sheet_number')->numeric()->default(1),
+                        TextInput::make('end_sheet_number')->numeric()->default(1),
                         Toggle::make('is_active')->default(false),
                     ])
                     ->live()
@@ -54,12 +58,15 @@ class CategoryResource extends Resource
             ->columns([
                 TextColumn::make('id')->sortable()->searchable(),
                 TextColumn::make('title')->inline()->searchable()->sortable(),
+                TextColumn::make('start_sheet_number')->formatStateUsing(function($record){
+                    return $record->start_sheet_number . ' - ' . $record->end_sheet_number;
+                })->sortable()->searchable(),
                 ToggleColumn::make('is_active')->searchable()->sortable(),
             ])
             ->filters([
                 // Filter by title
-               
-                
+
+
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

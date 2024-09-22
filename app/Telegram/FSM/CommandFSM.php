@@ -17,6 +17,8 @@ class CommandFSM extends Base
             '/chekyuborish' => $this->handleReceipt(),
             '/help' => $this->sendMessage(Menu::howBotWorks()),
             '/admin' => $this->sendMessage(Menu::admin()),
+            '/terms'=> $this->sendMessage(Menu::termsAndConditions()),
+            '/privacy'=> $this->sendMessage(Menu::privacyPolicy()),
             default => null
         };
     }
@@ -36,7 +38,7 @@ class CommandFSM extends Base
 
             return;
         }
-        
+
         TelegramUser::setLastMessage('chekyuborish');
 
         $this->sendMessage(Menu::receipt());

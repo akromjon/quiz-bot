@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -15,6 +14,9 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->boolean('is_active')->default(false);
+            $table->string('excel_file_path')->nullable();
+            $table->unsignedBigInteger('start_sheet_number')->default(0);
+            $table->unsignedBigInteger('end_sheet_number')->default(0);
             $table->timestamps();
         });
     }

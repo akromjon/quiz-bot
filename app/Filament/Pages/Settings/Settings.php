@@ -26,7 +26,9 @@ class Settings extends BaseSettings
                             TextInput::make('admin_username')->label('Admin Username')->placeholder('Admin Username')->required(),
                             TextInput::make('admin_username_link')->url()->label('Admin Username Link')->placeholder('Admin Username Link')->required(),
                             Textarea::make('welcome_message')->required()->autosize()->label('Welcome Message'),
+                            Textarea::make('admin_message')->required()->autosize()->label('Admin Message'),
                             Textarea::make('how_bot_works')->required()->autosize()->label('How Bot Works?'),
+                            Textarea::make('free_quiz_finished_message')->required()->autosize()->label('Free Quiz Finished Message'),
 
                         ]),
 
@@ -40,6 +42,19 @@ class Settings extends BaseSettings
                                 ->required()
                                 ->autosize()
                                 ->label('Receipt Rejected Message'),
+
+                        ]),
+                    Tabs\Tab::make('Terms and Conditions & Privacy Policy')
+                        ->schema([
+                            Textarea::make('terms_and_conditions')
+                                ->required()
+                                ->autosize()
+                                ->label('Terms and Conditions'),
+                            Textarea::make('privacy_policy')
+                                ->required()
+                                ->autosize()
+                                ->label('Privacy Policy'),
+
 
                         ]),
 
