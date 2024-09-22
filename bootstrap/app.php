@@ -122,8 +122,6 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
 
-
-
         // Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
 
         $exceptions->render(function (Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException $e, Request $request) {
@@ -131,6 +129,18 @@ return Application::configure(basePath: dirname(__DIR__))
             Log::error($e->getMessage());
 
             return response()->json(['message' => 'Route Not Found'], 404);
+        });
+
+
+        // we need to render every exception and return 200 status code
+
+        $exceptions->render(function (Exception $e, Request $request) {
+
+            Log::error($e->getMessage());
+
+            Log::error('request: ', $request->all());
+
+            return response()->json(['message' => 'something is not right'], 200);
         });
 
 
