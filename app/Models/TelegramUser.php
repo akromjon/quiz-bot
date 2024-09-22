@@ -53,12 +53,14 @@ class TelegramUser extends Model
 
         if (null === $user) {
 
+            $status=config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
+
             return self::create([
                 'user_id' => $chat->id,
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
-                'status' => TelegramUserStatusEnum::BLOCKED,
+                'status' => $status,
             ]);
 
         }
