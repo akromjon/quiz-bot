@@ -24,7 +24,7 @@ Route::get('/set-webhook', function () {
         'drop_pending_updates'=> true,
         'url' => $url,
         'secret_token' => config('telegram.bots.mybot.secret_token'),
-        'max_connections'=> 100,
+        'max_connections'=> config('telegram.bots.mybot.max_connections'),
     ]);
 
     Telegram::commandsHandler(true);
