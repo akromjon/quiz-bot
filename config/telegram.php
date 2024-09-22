@@ -40,8 +40,9 @@ return [
             /*
              * @see https://core.telegram.org/bots/api#update
              */
-            'allowed_updates' => null,           
-            'secret_token'=>env('TELEGRAM_BOT_SECRET_TOKEN')
+            'allowed_updates' => null,
+            'secret_token'=>env('TELEGRAM_BOT_SECRET_TOKEN'),
+            'max_connections'=>env('TELEGRAM_BOT_MAX_CONNECTIONS',100),
         ],
 
         //        'mySecondBot' => [
@@ -71,7 +72,7 @@ return [
     | Possible Values: (Boolean) "true" OR "false"
     |
     */
-    'async_requests' => env('TELEGRAM_ASYNC_REQUESTS', 
+    'async_requests' => env('TELEGRAM_ASYNC_REQUESTS',
 ),
 
     /*
