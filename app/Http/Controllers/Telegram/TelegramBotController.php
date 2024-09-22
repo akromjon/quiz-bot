@@ -17,7 +17,6 @@ class TelegramBotController extends TelegramBotBaseController
 {
     public function handleWebhook(): JsonResponse
     {
-
         $type = $this->objectType(getWebhookUpdate());
 
         match ($type) {

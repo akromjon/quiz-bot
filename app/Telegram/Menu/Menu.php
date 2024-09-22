@@ -280,6 +280,10 @@ class Menu
 
         if (!$question) {
 
+            defer(function () use ($sub_category_id) {
+                QuestionHistoryMiddleware::handle(currentTelegramUser(), sub_category_id: $sub_category_id, question_id: null);
+            });
+
             return self::handleWhenThereIsNoQuestion($category_id);
         }
 
@@ -770,12 +774,12 @@ class Menu
 
     public static function userHasHistory(QuestionHistory $history): array
     {
-        $text = "Sizda avval boshlangan test bor. Davom etasizmi yoki yangitdan boshlasangizmi?";
+        $text = "Sizda avval boshlangan test bor. Boshidan boshlaysizmi yoki davom etasizmi?";
 
         $keyboards = self::makeInlineKeyboard()
             ->row([
                 Keyboard::inlineButton([
-                    'text' => '🔄 Yangi test',
+                    'text' => '🔄 Boshidan boshlash',
                     'callback_data' => json_encode(['m' => 'R', 's' => $history->sub_category_id,'c'=>$history->subCategory->category_id]),
                 ]),
                 Keyboard::inlineButton([

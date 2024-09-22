@@ -8,6 +8,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,5 +35,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(100);
         });
+
+        Gate::define('viewPulse', function (User $user) {
+            return in_array($user->email, [
+                'akyprog@gmail.com',
+            ]);
+        });
+
+
     }
 }
