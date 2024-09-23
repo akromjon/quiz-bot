@@ -51,9 +51,10 @@ class TelegramUser extends Model
 
         $user = self::where('user_id', $chat->id)->first();
 
+        $status=config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
+
         if (null === $user) {
 
-            $status=config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
 
             return self::create([
                 'user_id' => $chat->id,
@@ -71,12 +72,13 @@ class TelegramUser extends Model
 
         }
 
-        defer(function () use ($user, $chat) {
+        defer(function () use ($user, $chat,$status) {
 
             $user->update([
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
+                'status'=>TelegramUserStatusEnum::INACTIVE!==$user->status ? TelegramUserStatusEnum::ACTIVE : $status
             ]);
 
         });
