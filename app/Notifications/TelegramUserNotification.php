@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Telegram\Bot\FileUpload\InputFile;
 use Telegram\Bot\Keyboard\Keyboard;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use Telegram\Bot\Exceptions\TelegramResponseException;
+use Illuminate\Support\Facades\Log;
+
 
 class TelegramUserNotification extends Notification
 {
@@ -38,8 +41,35 @@ class TelegramUserNotification extends Notification
         }
 
         foreach ($users as $user) {
-            $keyboards = $this->prepareKeyboards($telegramUserNotification);
-            $this->sendMessageOrFile($telegramUserNotification, $user, $keyboards);
+            try {
+
+                $keyboards = $this->prepareKeyboards($telegramUserNotification);
+                $this->sendMessageOrFile($telegramUserNotification, $user, $keyboards);
+
+            }catch(TelegramResponseException $e) {
+                if (403 === $e->getCode()) {
+
+                    $chat_id = null;
+
+                    $data = $e->getResponse()->getRequest()->getParams();
+
+                    foreach ($data['multipart'] as $part) {
+                        if ($part['name'] === 'chat_id') {
+                            $chat_id = $part['contents'];
+                            break;
+                        }
+                    }
+
+                    if (is_int($chat_id)) {
+
+                        TelegramUser::where('user_id', $chat_id)->update(['status' => 'blocked']);
+                    }
+
+                    Log::error("User $chat_id is blocked the bot");
+
+                }
+            }
+
         }
     }
 
