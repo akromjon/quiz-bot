@@ -39,16 +39,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if (403 === $e->getCode()) {
 
-                $update = getWebhookUpdate();
+                $chat_id = null;
+                $data = $e->getResponse()->getRequest()->getParams();
 
-                $user_id = $update->getChat()->getId();
-
-                if (is_int($user_id)) {
-
-                    TelegramUser::where('user_id', $user_id)->update(['status' => 'blocked']);
+                foreach ($data['multipart'] as $part) {
+                    if ($part['name'] === 'chat_id') {
+                        $chat_id = $part['contents'];
+                        break;
+                    }
                 }
 
-                Log::error("User $user_id is blocked the bot");
+                if (is_int($chat_id)) {
+
+                    TelegramUser::where('user_id', $chat_id)->update(['status' => 'blocked']);
+                }
+
+                Log::error("User $chat_id is blocked the bot");
 
                 return response()->json([
                     'message' => 'unauthorized',
