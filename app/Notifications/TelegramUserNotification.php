@@ -53,13 +53,19 @@ class TelegramUserNotification extends Notification
 
                     $data = $e->getResponse()->getRequest()->getParams();
 
-                    logger("data:", $data);
+                    Log::error("data:", $data);
 
-                    foreach ($data['multipart'] as $part) {
-                        if ($part['name'] === 'chat_id') {
-                            $chat_id = $part['contents'];
-                            break;
+                    if(array_key_exists('multipart', $data)) {
+                        foreach ($data['multipart'] as $part) {
+                            if ($part['name'] === 'chat_id') {
+                                $chat_id = $part['contents'];
+                                break;
+                            }
                         }
+                    }
+
+                    if(array_key_exists('form_params', $data)) {
+                        $chat_id = $data['form_params']['chat_id'];
                     }
 
                     if (is_int($chat_id)) {
