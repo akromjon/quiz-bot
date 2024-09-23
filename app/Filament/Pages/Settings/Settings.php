@@ -29,6 +29,7 @@ class Settings extends BaseSettings
                             Textarea::make('admin_message')->required()->autosize()->label('Admin Message'),
                             Textarea::make('how_bot_works')->required()->autosize()->label('How Bot Works?'),
                             Textarea::make('free_quiz_finished_message')->required()->autosize()->label('Free Quiz Finished Message'),
+                            Textarea::make('unpaid_service_message')->required()->autosize()->label('Unpaid Service Message'),
 
                         ]),
 
