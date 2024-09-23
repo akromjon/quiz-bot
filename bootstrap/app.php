@@ -40,13 +40,22 @@ return Application::configure(basePath: dirname(__DIR__))
             if (403 === $e->getCode()) {
 
                 $chat_id = null;
+
                 $data = $e->getResponse()->getRequest()->getParams();
 
-                foreach ($data['multipart'] as $part) {
-                    if ($part['name'] === 'chat_id') {
-                        $chat_id = $part['contents'];
-                        break;
+                Log::error("data:", $data);
+
+                if (array_key_exists('multipart', $data)) {
+                    foreach ($data['multipart'] as $part) {
+                        if ($part['name'] === 'chat_id') {
+                            $chat_id = $part['contents'];
+                            break;
+                        }
                     }
+                }
+
+                if (array_key_exists('form_params', $data)) {
+                    $chat_id = $data['form_params']['chat_id'];
                 }
 
                 if (is_int($chat_id)) {
