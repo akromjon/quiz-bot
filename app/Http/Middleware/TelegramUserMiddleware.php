@@ -33,7 +33,7 @@ class TelegramUserMiddleware
         });
 
 
-        if ($user->status === TelegramUserStatusEnum::BLOCKED) {
+        if ($user->status === TelegramUserStatusEnum::INACTIVE) {
 
             Log::error("User is blocked", $user->toArray());
 
