@@ -138,8 +138,10 @@ class TelegramUserNotification extends Notification
 
     private function sendPhoto(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
     {
+        $path=storage_path("app/public/{$telegramUserNotification->params['file']}");
+
         $params = [
-            'photo' => InputFile::create(asset("storage/{$telegramUserNotification->params['file']}")),
+            'photo' => InputFile::create($path),
             'caption' => $telegramUserNotification->params['text'],
             'parse_mode' => 'HTML',
             'chat_id' => $user->user_id,
@@ -155,8 +157,10 @@ class TelegramUserNotification extends Notification
 
     private function sendVideo(TelegramUserNotificationModel $telegramUserNotification, TelegramUser $user, ?Keyboard $keyboards): void
     {
+        $path=storage_path("app/public/{$telegramUserNotification->params['file']}");
+
         $params = [
-            'video' => InputFile::create(asset("storage/{$telegramUserNotification->params['file']}")),
+            'video' => InputFile::create($path),
             'caption' => $telegramUserNotification->params['text'],
             'parse_mode' => 'HTML',
             'chat_id' => $user->user_id,
