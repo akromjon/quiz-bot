@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Enums\TelegramUserStatusEnum;
 use App\Models\TelegramUser;
 use Illuminate\Console\Command;
 use Telegram\Bot\Exceptions\TelegramResponseException;
@@ -35,7 +36,7 @@ class CheckTelegramUserStatusCommand extends Command
 
             foreach ($users as $user) {
 
-                try{
+                try {
 
                     $this->info("Checking user $user->user_id");
 
@@ -44,41 +45,15 @@ class CheckTelegramUserStatusCommand extends Command
                         'action' => 'typing',
                     ]);
 
-                    $this->info("User $user->user_id is active");
+                    $this->info("User $user->user_id is active\n");
 
-                }catch(TelegramResponseException $e) {
+                } catch (TelegramResponseException $e) {
 
                     if (403 === $e->getCode()) {
 
                         $this->error("User $user->user_id is blocked the bot");
 
-                        $chat_id = null;
-
-                        $data = $e->getResponse()->getRequest()->getParams();
-
-                        Log::error("data:", $data);
-
-                        if(array_key_exists('multipart', $data)) {
-                            foreach ($data['multipart'] as $part) {
-                                if ($part['name'] === 'chat_id') {
-                                    $chat_id = $part['contents'];
-                                    break;
-                                }
-                            }
-                        }
-
-                        if(array_key_exists('form_params', $data)) {
-                            $chat_id = $data['form_params']['chat_id'];
-                        }
-
-                        if (is_int($chat_id)) {
-
-                            TelegramUser::where('user_id', $chat_id)->update(['status' => 'blocked']);
-                        }
-
-                        $this->error("User $chat_id is blocked the bot");
-
-
+                        $user->update(['status' => TelegramUserStatusEnum::BLOCKED]);
                     }
 
                     Log::error($e->getMessage());
