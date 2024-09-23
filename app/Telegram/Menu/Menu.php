@@ -715,7 +715,7 @@ class Menu
     public static function handleUnpaidService(): array
     {
         return [
-            'text' => 'Bu xizmat faqat pullik foydalanuvchilar uchun mavjud 🤔',
+            'text' => setting('unpaid_service_message') ?? 'Bu xizmat faqat pullik foydalanuvchilar uchun mavjud 🤔',
             'parse_mode' => 'HTML',
         ];
     }
