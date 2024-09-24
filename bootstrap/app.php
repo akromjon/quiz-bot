@@ -43,8 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 $data = $e->getResponse()->getRequest()->getParams();
 
-                Log::error("data:", $data);
-
                 if (array_key_exists('multipart', $data)) {
                     foreach ($data['multipart'] as $part) {
                         if ($part['name'] === 'chat_id') {
