@@ -62,7 +62,11 @@ class TelegramUserResource extends Resource
             ->columns([
                 TextColumn::make('id')->sortable()->searchable(),
                 TextColumn::make('user_id')->sortable()->numeric()->copyable(),
-                TextColumn::make('username')->sortable()->searchable(),
+                TextColumn::make('username')->formatStateUsing(function ($record) {
+                    return '@' . $record->username ?? '';
+                })->sortable()->copyable()->copyableState(function ($record) {
+                    return '@' . $record->username;
+                })->searchable(),
                 TextColumn::make('first_name')->sortable()->searchable(),
                 SelectColumn::make('status')->options(TelegramUserStatusEnum::class)->inline()->sortable()->searchable(),
                 SelectColumn::make('tariff')->options(TelegramUserTariffEnum::class)->sortable()->searchable(),
