@@ -21,6 +21,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Outerweb\FilamentSettings\Filament\Plugins\FilamentSettingsPlugin;
 use App\Filament\Pages\Settings\Settings;
+use Saade\FilamentLaravelLog\FilamentLaravelLogPlugin;
 
 class AdministratorPanelProvider extends PanelProvider
 {
@@ -67,7 +68,11 @@ class AdministratorPanelProvider extends PanelProvider
                 FilamentSettingsPlugin::make()
                     ->pages([
                         Settings::class,
-                    ])
+                    ]),
+                FilamentLaravelLogPlugin::make()
+                ->navigationIcon('heroicon-o-bug-ant')
+                ->navigationSort(1)
+                ->slug('logs')
             ]);
     }
 }
