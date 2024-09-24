@@ -18,8 +18,8 @@ class Dashboard extends PagesDashboard
             QuizOverview::class,
             TelegramUserStatsOverview::class,
             TransactionWidget::class,
-            TelegramUserTableWidget::class,
             TransactionTableWidget::class,
+            TelegramUserTableWidget::class,
         ];
     }
 
