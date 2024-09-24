@@ -24,7 +24,7 @@ class TelegramBotController extends TelegramBotBaseController
             'callback_query' => CallbackQueryFSM::handle($type),
             'file' => FileFSM::handle($type),
             'command' => CommandFSM::handle($type),
-            default => Log::error('Unknown message type returned'),
+            default => Log::error('Unknown message type returned from TelegramBotController'),
         };
 
         return $this->respondSuccess();

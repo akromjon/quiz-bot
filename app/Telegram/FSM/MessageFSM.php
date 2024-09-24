@@ -24,7 +24,7 @@ class MessageFSM extends Base
             '🧩 Mix Testlar' => $this->sendMessageOrFile(Menu::handeMixQuiz()),
             '🆓 Bepul Testlar' => $this->sendMessageOrFile(Menu::handleFreeQuiz()),
             // 'invoice' => $this->handleInvoice(),
-            default => Log::error('Unknown message type returned'),
+            default => Log::error('Unknown message type returned from MessageFSM'),
         };
     }
 
