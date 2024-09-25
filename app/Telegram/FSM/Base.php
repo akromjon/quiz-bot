@@ -16,6 +16,7 @@ abstract class Base
     protected int|null $message_id;
     protected string|null|object $message;
     protected Update $update;
+    protected Message $user_message;
     abstract protected function route(): void;
 
     public static function handle(...$arg): self
@@ -64,7 +65,7 @@ abstract class Base
 
         $this->message_id = $this->update->getCallbackQuery()->getMessage()->message_id;
 
-
+        $this->user_message=$this->update->getCallbackQuery()->getMessage();
     }
 
     protected function handleMessage(): void

@@ -7,6 +7,7 @@ use App\Telegram\Menu\Menu;
 use App\Telegram\Middleware\CheckUserIsPaidOrNotMiddleware;
 use App\Telegram\Middleware\QuestionHistoryMiddleware;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CallbackQueryFSM extends Base
 {
@@ -34,7 +35,7 @@ class CallbackQueryFSM extends Base
             'F' => $this->handleFreeQuiz($this->message), // Free Quiz
             'FP' => $this->handleFreeQuiz($this->message, false), // Free Quiz
             'FW' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
-            'R'=>$this->handleQuestionReset($this->message),
+            'R' => $this->handleQuestionReset($this->message),
             default => Log::error('Unknown CallbackQuery type returned'),
         };
     }
@@ -136,7 +137,45 @@ class CallbackQueryFSM extends Base
             'message_id' => $this->message_id,
         ]);
 
+        $this->handleUserHistory();
+
         $this->sendMessageOrFile($menu);
+    }
+
+    private function handleUserHistory(string $model='Q'): void
+    {
+
+        $inline_keyboard_array = json_decode($this->user_message->get('reply_markup')->inline_keyboard)[0];
+
+        $correct_answer = '';
+
+        foreach ($inline_keyboard_array as $keyboard) {
+
+            if(!in_array($keyboard->text,['a','b','c','d'])){
+                break;
+            }
+
+            $callback_data = json_decode($keyboard->callback_data);
+
+            if (is_object($callback_data) && property_exists($callback_data, 'm') && $callback_data->m === $model) {
+                $correct_answer = $keyboard->text . ')';
+            }
+        }
+
+        if ('' !== $correct_answer) {
+
+            $text = $this->user_message->get('text');
+
+            $text = Str::replace($correct_answer, "✅ {$correct_answer}", $text);
+
+            $this->sendMessageOrFile([
+                'type' => 'message',
+                'text' => $text,
+                'parse_mode' => 'HTML',
+            ]);
+        }
+
+
     }
 
     private function checkIfUserHasHistory(object $message): array
@@ -169,6 +208,8 @@ class CallbackQueryFSM extends Base
 
         $menu = Menu::handeMixQuiz();
 
+        $this->handleUserHistory('M');
+
         $this->sendMessageOrFile($menu);
 
     }
@@ -185,12 +226,14 @@ class CallbackQueryFSM extends Base
 
         $menu = Menu::handleFreeQuiz($message->q, $load_next);
 
+        if($load_next===true) $this->handleUserHistory('F');
+
         $this->sendMessageOrFile($menu);
     }
 
     protected function handleQuestionReset(object $message): void
     {
-        $menu= Menu::question(
+        $menu = Menu::question(
             category_id: $message->c,
             sub_category_id: $message->s,
             question_id: property_exists($message, 'q') ? $message->q : null,
@@ -207,12 +250,6 @@ class CallbackQueryFSM extends Base
 
         $this->sendMessage($menu);
     }
-
-
-
-
-
-
 
 
 }
