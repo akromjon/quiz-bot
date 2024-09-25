@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Enums\TelegramUserStatusEnum;
+use App\Models\Enums\TelegramUserTariffEnum;
 use App\Models\TelegramUser;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -13,9 +15,11 @@ class TelegramUserStatsOverview extends BaseWidget
     {
         $total_users = TelegramUser::count();
 
-        $paid_users = TelegramUser::where('tariff', 'paid')->count();
+        $paid_users = TelegramUser::where('tariff', TelegramUserTariffEnum::PAID)->count();
 
-        $free_users = TelegramUser::where('tariff', 'free')->count();
+        $free_users = TelegramUser::where('tariff', TelegramUserTariffEnum::FREE)->count();
+
+        $blocked_users = TelegramUser::where('status', TelegramUserStatusEnum::BLOCKED)->count();
 
         return [
             Stat::make('👤 Total Users', $total_users)
@@ -24,6 +28,9 @@ class TelegramUserStatsOverview extends BaseWidget
                 ->color('success'),
 
             Stat::make('🆓 Free Users', $free_users)
+                ->color('success'),
+
+            Stat::make('❌ Blocked Users', $blocked_users)
                 ->color('success'),
         ];
     }
