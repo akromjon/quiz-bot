@@ -39,6 +39,7 @@ class TelegramUserNotificationResource extends Resource
                 Section::make('Params')
                     ->statePath('params')
                     ->schema([
+                        TextInput::make('name')->required(),
                         FileUpload::make('file')->previewable(false)->openable()->downloadable()->maxSize(20480),
                         Textarea::make('text')->maxLength(4096)->required()->autosize(),
                         Repeater::make('inlineButtons')
@@ -58,6 +59,7 @@ class TelegramUserNotificationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('params.name')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('params.file')->label('File')->formatStateUsing(function ($record) {
                     return "📄 View a file";
                 })->url(function ($record) {

@@ -58,6 +58,10 @@ class Settings extends BaseSettings
 
 
                         ]),
+                    Tabs\Tab::make('Free Question')
+                        ->schema([
+                            TextInput::make('free_question_limit')->numeric()->label('Free Question Limit')->required()->default(30),
+                        ]),
 
                 ]),
         ];
