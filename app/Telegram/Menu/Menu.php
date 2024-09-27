@@ -160,8 +160,11 @@ class Menu
                 Keyboard::button('🧩 Mix Testlar'),
             ])
             ->row([
-                // Keyboard::button(' 🔍 Izlash'),
                 Keyboard::button('📚 Mavzulashtirilgan Testlar'),
+            ])
+            ->row([
+                Keyboard::button('👤 Mening Profilim'),
+                Keyboard::button('🤔 Bot qanday ishlaydi?'),
             ]);
 
         return [
