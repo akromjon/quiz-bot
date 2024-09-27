@@ -23,6 +23,8 @@ class MessageFSM extends Base
             '📚 Mavzulashtirilgan Testlar' => $this->sendMessage(Menu::category()),
             '🧩 Mix Testlar' => $this->sendMessageOrFile(Menu::handeMixQuiz()),
             '🆓 Bepul Testlar' => $this->sendMessageOrFile(Menu::handleFreeQuiz()),
+            '👤 Mening Profilim'=>$this->sendMessage(Menu::profile($this->chat_id)),
+            '🤔 Bot qanday ishlaydi?'=>$this->sendMessage(Menu::howBotWorks()),
             // 'invoice' => $this->handleInvoice(),
             default => Log::error('Unknown message type returned from MessageFSM'),
         };
