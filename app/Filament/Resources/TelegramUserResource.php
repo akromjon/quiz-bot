@@ -76,15 +76,7 @@ class TelegramUserResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
-                // let's add a custom action
-
-                self::getCustomAction(),
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-
-            ])
+            ->actions(self::getCustomAction())
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
@@ -109,15 +101,28 @@ class TelegramUserResource extends Resource
         ];
     }
 
-    public static function getCustomAction(): Action
+    public static function getCustomAction(): array
     {
-        return Action::make(name: 'Update Tariff')
-            ->action(function () {
-                Artisan::call('app:check-user-tariff-command');
-            })
-            ->icon('heroicon-m-play')
-            ->requiresConfirmation()
-            ->color('primary');
+        return [
+            Action::make(name: setting('trial_day')." trial day")
+                ->action(function ($record) {
+                    Artisan::call('app:user-trial-giver-command',['user_id'=>$record->user_id]);
+                })
+                ->icon('heroicon-m-play')
+                ->requiresConfirmation()
+                ->color('primary'),
+            Action::make(name: 'Update Tariff')
+                ->action(function () {
+                    Artisan::call('app:check-user-tariff-command');
+                })
+                ->icon('heroicon-m-play')
+                ->requiresConfirmation()
+                ->color('primary'),
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+
+        ];
     }
 
 

@@ -18,6 +18,7 @@ class Settings extends BaseSettings
                 ->schema([
                     Tabs\Tab::make('Bot Settings')
                         ->schema([
+                            TextInput::make('trial_day')->label('Trial day')->placeholder('Trial day')->required(),
                             TextInput::make('tariff_amount')->mask(RawJs::make('$money($input)'))
                                 ->stripCharacters(',')
                                 ->numeric()

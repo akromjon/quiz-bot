@@ -58,8 +58,8 @@ class CheckUserTariffCommand extends Command
 
                     Telegram::sendMessage(Menu::profile($user->user_id));
 
-                    // Telegram::sendMessage(Menu::notifyUserWhenMoneyIsSubtracted($user->user_id, setting('tariff_amount'), $user->balance));
-                    Telegram::sendMessage(Menu::notifyUserWhenProfileChanged($user->user_id));
+                    Telegram::sendMessage(Menu::notifyUserWhenMoneyIsSubtracted($user->user_id, setting('tariff_amount'), $user->balance));
+                    // Telegram::sendMessage(Menu::notifyUserWhenProfileChanged($user->user_id));
 
 
                     $this->info('User: ' . $user->user_id . ' paid and next payment date updated!');

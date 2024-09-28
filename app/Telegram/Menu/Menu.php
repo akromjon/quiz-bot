@@ -741,11 +741,11 @@ class Menu
         ];
     }
 
-    public static function notifyUserWhenProfileChanged(int $chat_id): array
+    public static function notifyUserWhenProfileChanged(int $chat_id,int $day): array
     {
         return [
             'chat_id' => $chat_id,
-            'text' => "Tarifingiz profilda o'zgardi, testlarni ishlashingiz mumkin!",
+            'text' => "Tarifingiz profilda o'zgardi, testlarni {$day} kun bepul ishlashingiz mumkin!",
             'parse_mode' => 'HTML',
         ];
     }
