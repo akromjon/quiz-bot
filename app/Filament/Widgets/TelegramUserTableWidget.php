@@ -39,9 +39,9 @@ class TelegramUserTableWidget extends BaseWidget
                 TextColumn::make('created_at')->dateTime()->sortable()->searchable(),
                 TextColumn::make('last_used_at')->dateTime()->sortable()->searchable(),
             ])
-            ->actions([
+            ->actions(
                 TelegramUserResource::getCustomAction()
-            ]);
+            );
 
     }
 }
