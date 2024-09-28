@@ -738,6 +738,15 @@ class Menu
         ];
     }
 
+    public static function notifyUserWhenProfileChanged(int $chat_id): array
+    {
+        return [
+            'chat_id' => $chat_id,
+            'text' => "Tarifingiz profilda o'zgardi, testlarni ishlashingiz mumkin!",
+            'parse_mode' => 'HTML',
+        ];
+    }
+
     public static function termsAndConditions(): array
     {
         $keyboard = self::makeInlineKeyboard()
