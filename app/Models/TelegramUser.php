@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
@@ -51,7 +52,7 @@ class TelegramUser extends Model
 
         $user = self::where('user_id', $chat->id)->first();
 
-        $status=config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
+        $status = config('app.env') === 'production' ? TelegramUserStatusEnum::ACTIVE : TelegramUserStatusEnum::BLOCKED;
 
         if (null === $user) {
 
@@ -72,13 +73,13 @@ class TelegramUser extends Model
 
         }
 
-        defer(function () use ($user, $chat,$status) {
+        defer(function () use ($user, $chat, $status) {
 
             $user->update([
                 'username' => $chat->username,
                 'first_name' => $chat->first_name,
                 'last_name' => $chat->last_name,
-                'status'=>TelegramUserStatusEnum::INACTIVE!==$user->status ? TelegramUserStatusEnum::ACTIVE : $status
+                'status' => TelegramUserStatusEnum::INACTIVE !== $user->status ? TelegramUserStatusEnum::ACTIVE : $status
             ]);
 
         });
@@ -87,7 +88,7 @@ class TelegramUser extends Model
     }
 
 
-    public function transactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
     }
@@ -142,7 +143,7 @@ class TelegramUser extends Model
         });
     }
 
-    public function histories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function histories(): HasMany
     {
         return $this->hasMany(QuestionHistory::class);
     }
@@ -150,6 +151,11 @@ class TelegramUser extends Model
     public function getHistory(int $sub_category_id): ?QuestionHistory
     {
         return $this->histories()->where('sub_category_id', $sub_category_id)->first();
+    }
+
+    public function results(): HasMany
+    {
+        return $this->hasMany(TelegramUserQuestionResult::class);
     }
 
 }

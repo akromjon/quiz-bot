@@ -6,7 +6,7 @@ use App\Models\Question;
 use App\Models\TelegramUserNotification;
 use Illuminate\Console\Command;
 use App\Notifications\TelegramUserNotification as AliasedTelegramUserNotification;
-
+use Illuminate\Support\Facades\Cache;
 
 class UpdateFreeQuizDailyCommand extends Command
 {
@@ -31,9 +31,13 @@ class UpdateFreeQuizDailyCommand extends Command
     {
         $this->info('starting UpdateFreeQuizDailyCommand');
 
-        Question::where('is_free', true)->update(['is_free' => false]);
-
         $question_limit = setting('free_question_limit') ?? 30;
+
+        for ($i = 1; $i <= $question_limit; $i++) {
+            Cache::forget("free_question:{$i}");
+        }
+
+        Question::where('is_free', true)->update(['is_free' => false]);
 
         $questions = Question::inRandomOrder()->limit($question_limit)->get();
 

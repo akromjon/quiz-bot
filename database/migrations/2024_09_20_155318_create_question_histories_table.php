@@ -13,6 +13,7 @@ return new class extends Migration {
 
         Schema::create('question_histories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('page_number')->nullable();
             $table->unsignedBigInteger('question_id')->nullable();
             $table->unsignedBigInteger('telegram_user_id'); // telegram_users.id not telegram_users.user_id
             $table->unsignedBigInteger('sub_category_id');

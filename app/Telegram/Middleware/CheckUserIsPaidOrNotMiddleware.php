@@ -11,13 +11,11 @@ class CheckUserIsPaidOrNotMiddleware extends BaseMiddleware
     // 'C' => $this->handleCategory(), // Category
     // 'S' => $this->handleSubCategory($this->message), // SubCategory
     // 'Q' => $this->handleQuestion($this->message),  // Question
-    // 'P' => $this->handlePreviousQuestion($this->message), // Previous Question
     // 'W' => $this->answerCallbackQuery(Menu::handleWrongAnswer()),
     // 'M' => $this->handleMixQuiz(), // Mix Quiz
     protected static array $paidServices = [
         'S',
         'Q',
-        'P',
         'W',
         'M',
         '🧩 Mix Testlar'
