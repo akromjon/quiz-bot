@@ -14,10 +14,10 @@ return new class extends Migration {
             $table->id();
             $table->string('type', 50)->default('topical');
             $table->unsignedBigInteger('telegram_user_id');
-            $table->unsignedBigInteger('total_correct_answers')->default(0);
-            $table->unsignedBigInteger('total_incorrect_answers')->default(0);
-            $table->unsignedBigInteger('total_questions')->default(0);
+            $table->unsignedBigInteger('page_number');
+            $table->unsignedBigInteger('question_id')->nullable();
             $table->unsignedBigInteger('sub_category_id')->nullable();
+            $table->boolean('is_correct')->default(false);
             $table->timestamps();
         });
     }

@@ -20,14 +20,6 @@ class QuestionHistoryMiddleware extends BaseMiddleware
                 'page_number' => $page_number,
             ]);
 
-            $sub_category = SubCategory::find(id: $sub_category_id);
-
-            $user->results()->create([
-                'type' => 'topical',
-                'sub_category_id' => $sub_category_id,
-                'total_questions' => $sub_category->questionCount(),
-            ]);
-
             return;
         }
 

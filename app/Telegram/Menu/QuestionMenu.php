@@ -7,20 +7,29 @@ use Illuminate\Support\Facades\Cache;
 use Telegram\Bot\Keyboard\Keyboard;
 use App\Models\SubCategory;
 use App\Models\Question;
-
+use App\Models\TelegramUserQuestionResult;
 
 class QuestionMenu extends Menu
 {
-    public static function get(int $sub_category_id, int $page_number = 1): array
+    public static function get(int $sub_category_id, int $page_number, ?int $question_id, string $user_answer = 'C'): array
     {
-        $question = Cache::rememberForever("question:{$sub_category_id}:{$page_number}", function () use ($sub_category_id, $page_number): ?Question {
+        $result = null;
 
-            return self::getQuestionBySubCategoryId(
+        if (null !== $question_id) {
+
+            $result = TelegramUserQuestionResult::storeUserQuestionResult(
                 sub_category_id: $sub_category_id,
-                page_number: $page_number
+                question_id: $question_id,
+                page_number: $page_number - 1,
+                is_correct: $user_answer === 'C' ? true : false
             );
+        }
 
-        });
+
+        $question = self::getQuestionBySubCategoryId(
+            sub_category_id: $sub_category_id,
+            page_number: $page_number
+        );
 
         if (null === $question) {
 
@@ -31,62 +40,29 @@ class QuestionMenu extends Menu
 
         }
 
-        if ($page_number > 1) {
-            self::logQuestionResult($sub_category_id);
-        }
-
-        self::logQuestionHistory(
+        self::rememberUserQuestion(
             sub_category_id: $sub_category_id,
             question_id: $question->id,
             page_number: $page_number
         );
 
+        $response = [];
 
-        return self::formatQuestionBody(
+        $response['current_question'] = self::formatQuestionBody(
             question: $question,
             sub_category_id: $sub_category_id,
             page_number: $page_number
         );
-    }
-
-    public static function handleWrongAnswer(object $message): array
-    {
-        $result = currentTelegramUser()
-            ->results()
-            ->where('sub_category_id', $message->s)
-            ->first();
 
         if (null !== $result) {
-
-            $result->update([
-                'total_correct_answers' => $message->p - 1 === 1 ? 0 : $result->total_correct_answers,
-                'total_incorrect_answers' => $message->p - 1 === 1 ? 1 : $result->total_incorrect_answers + 1,
-            ]);
+            $response['result'] = $result;
         }
 
-        return self::get(
-            sub_category_id: $message->s,
-            page_number: $message->p,
-        );
+        return $response;
     }
 
-    private static function logQuestionResult(int $sub_category_id): void
-    {
-        $result = currentTelegramUser()
-            ->results()
-            ->where('sub_category_id', $sub_category_id)
-            ->first();
 
-        if (null !== $result) {
-
-            $result->update([
-                'total_correct_answers' => $result->total_correct_answers + 1,
-            ]);
-        }
-
-    }
-
-    private static function logQuestionHistory(int $sub_category_id, int $question_id, int $page_number): void
+    private static function rememberUserQuestion(int $sub_category_id, int $question_id, int $page_number): void
     {
 
         defer(callback: function () use ($sub_category_id, $question_id, $page_number): void {
@@ -133,6 +109,30 @@ class QuestionMenu extends Menu
             'answerCallbackText' => '🏁 Testlar Tugadi 🏁',
         ];
     }
+
+    protected static function formatQuestionWithoutBody(Question $question,  int $page_number): array
+    {
+        if ($question->file === null) {
+
+            return [
+                'type' => 'message',
+                'parse_mode' => 'HTML',
+                'text' => self::formatQuestion($question, $page_number),
+                // 'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
+            ];
+        }
+
+        return [
+            'type' => 'file',
+            'parse_mode' => 'HTML',
+            'file' => asset("/storage/{$question->file}"),
+            'caption' => self::formatQuestion($question, $page_number),
+            // 'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
+        ];
+
+
+    }
+
     protected static function formatQuestionBody(Question $question, int $sub_category_id, int $page_number): array
     {
         $callback_data = [
@@ -147,6 +147,7 @@ class QuestionMenu extends Menu
         foreach ($question->questionOptions as $key => $option) {
 
             $callback_data['m'] = $option->is_answer ? 'Q' : 'W';
+            $callback_data['q'] = $question->id;
 
             $keyboards[] = Keyboard::inlineButton([
                 'text' => $letters[$key],
@@ -192,7 +193,7 @@ class QuestionMenu extends Menu
                 'reply_markup' => $keyboard,
                 'parse_mode' => 'HTML',
                 'text' => self::formatQuestion($question, $page_number),
-                'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
+                // 'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
             ];
         }
 
@@ -202,19 +203,24 @@ class QuestionMenu extends Menu
             'parse_mode' => 'HTML',
             'file' => asset("/storage/{$question->file}"),
             'caption' => self::formatQuestion($question, $page_number),
-            'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
+            // 'answerCallbackText' => ($page_number === 1) ? "To'g'ri ✅" : '🤞 Omad 🤞'
         ];
 
 
     }
-    protected static function getQuestionBySubCategoryId(int $sub_category_id, int $page_number = 1): ?Question
+    public static function getQuestionBySubCategoryId(int $sub_category_id, int $page_number = 1): ?Question
     {
-        return
-            (Question::where('sub_category_id', $sub_category_id)
-                ->active()
-                ->with('questionOptions', 'subCategory.category')
-                ->orderBy('id')
-                ->paginate(1, '*', 'page', $page_number))->first();
+        return Cache::rememberForever("question:{$sub_category_id}:{$page_number}", function () use ($sub_category_id, $page_number): ?Question {
+
+            return
+                (Question::where('sub_category_id', $sub_category_id)
+                    ->active()
+                    ->with('questionOptions', 'subCategory.category')
+                    ->orderBy('id')
+                    ->paginate(1, '*', 'page', $page_number))->first();
+
+        });
+
 
     }
 }

@@ -2,13 +2,12 @@
 
 namespace App\Telegram\FSM;
 
-use App\Models\Category;
+
 use App\Telegram\Menu\FreeQuestionMenu;
 use App\Telegram\Menu\Menu;
 use App\Telegram\Menu\MixQuestionMenu;
 use App\Telegram\Menu\QuestionMenu;
 use App\Telegram\Middleware\CheckUserIsPaidOrNotMiddleware;
-use App\Telegram\Middleware\QuestionHistoryMiddleware;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -17,9 +16,9 @@ class CallbackQueryFSM extends Base
     protected function route(): void
     {
 
-        $lets_check = CheckUserIsPaidOrNotMiddleware::handle($this->message->m);
+        $user_paid_or_not = CheckUserIsPaidOrNotMiddleware::handle(message: $this->message->m);
 
-        if (!$lets_check) {
+        if (!$user_paid_or_not) {
 
             $this->sendMessage(Menu::handleUnpaidService());
 
@@ -30,14 +29,14 @@ class CallbackQueryFSM extends Base
         match ($this->message->m) {
             'base' => $this->base(),
             'C' => $this->handleCategory(), // Category
-            'S' => $this->handleSubCategory($this->message), // SubCategory
-            'Q' => $this->questionHandler($this->message),  // Question
-            'W' => $this->sendMessageOrFile(QuestionMenu::handleWrongAnswer($this->message)),
+            'S' => $this->handleSubCategory(message: $this->message), // SubCategory
+            'Q' => $this->questionHandler(message: $this->message),  // Question
+            'W' => $this->handleWrongAnswer(message: $this->message),
             'M' => $this->handleMixQuiz(), // Mix Quiz
-            'F' => $this->handleFreeQuiz($this->message), // Free Quiz
-            'FW' => $this->answerCallbackQuery(FreeQuestionMenu::handleWrongAnswer()),
-            'R' => $this->handleQuestionReset($this->message),
-            default => Log::error('Unknown CallbackQuery type returned'),
+            'F' => $this->handleFreeQuiz(message: $this->message), // Free Quiz
+            'FW' => $this->answerCallbackQuery(params: FreeQuestionMenu::handleWrongAnswer()),
+            'R' => $this->handleQuestionReset(message: $this->message),
+            default => Log::error(message: 'Unknown CallbackQuery type returned'),
         };
     }
 
@@ -70,14 +69,16 @@ class CallbackQueryFSM extends Base
             'message_id' => $this->message_id,
         ]);
 
-        $this->sendMessage($menu);
+        $this->sendMessage(params: $menu);
     }
 
     protected function base(): void
     {
-        $this->deleteMessage([
-            'message_id' => $this->message_id,
-        ]);
+        $this->deleteMessage(
+            params: [
+                'message_id' => $this->message_id,
+            ]
+        );
 
         $this->answerCallbackQuery([
             'text' => '🏠 Asosiy Menu',
@@ -86,12 +87,16 @@ class CallbackQueryFSM extends Base
         $this->sendMessage(Menu::base());
     }
 
-
-    protected function questionHandler(object $message): void
+    protected function handleWrongAnswer(object $message): void
     {
-        $menu = $this->checkIfUserHasHistory($message);
+        $menu = QuestionMenu::get(
+            sub_category_id: $message->s,
+            page_number: $message->p,
+            question_id: property_exists($message, 'q') ? $message->q : null,
+            user_answer: 'W'
+        );
 
-        if (array_key_exists('answerCallbackText', $menu)) {
+        if (array_key_exists(key: 'answerCallbackText', array: $menu)) {
 
             $this->answerCallbackQuery([
                 'text' => $menu['answerCallbackText'],
@@ -104,14 +109,36 @@ class CallbackQueryFSM extends Base
 
         // $this->handleUserHistory();
 
-        $this->sendMessageOrFile($menu);
+        $this->sendMessageOrFile(menu: $menu);
+    }
+
+
+    protected function questionHandler(object $message): void
+    {
+        $menu = $this->checkIfUserHasHistory(message: $message);
+
+        if (array_key_exists(key: 'answerCallbackText', array: $menu)) {
+
+            $this->answerCallbackQuery([
+                'text' => $menu['answerCallbackText'],
+            ]);
+        }
+
+        $this->deleteMessage([
+            'message_id' => $this->message_id,
+        ]);
+
+
+        // $this->handleUserHistory();
+
+        $this->sendMessageOrFile(menu: $menu['current_question']);
     }
 
     private function checkIfUserHasHistory(object $message): array
     {
-        $history = currentTelegramUser()->getHistory($message->s);
+        $history = currentTelegramUser()->getHistory(sub_category_id: $message->s);
 
-        if ($history !== null && $history->page_number !== null && property_exists($message,'h') && $message->h === 'l') {
+        if ($history !== null && $history->page_number !== null && property_exists($message, 'h') && $message->h === 'l') {
 
             return Menu::userHasHistory(history: $history);
 
@@ -119,6 +146,7 @@ class CallbackQueryFSM extends Base
 
         return QuestionMenu::get(
             sub_category_id: $message->s,
+            question_id: property_exists($message, 'q') ? $message->q : null,
             page_number: $message->p,
         );
     }
@@ -160,19 +188,19 @@ class CallbackQueryFSM extends Base
     }
     protected function handleMixQuiz(): void
     {
-        $this->answerCallbackQuery([
+        $this->answerCallbackQuery(params: [
             'text' => '🧩 Mix Testlar',
         ]);
 
-        $this->deleteMessage([
+        $this->deleteMessage(params: [
             'message_id' => $this->message_id,
         ]);
 
         $menu = MixQuestionMenu::get();
 
-        $this->handleUserHistory('M');
+        $this->handleUserHistory(model: 'M');
 
-        $this->sendMessageOrFile($menu);
+        $this->sendMessageOrFile(menu: $menu);
 
     }
 
@@ -186,15 +214,16 @@ class CallbackQueryFSM extends Base
             'message_id' => $this->message_id,
         ]);
 
-        $menu = FreeQuestionMenu::get($message->p);
+        $menu = FreeQuestionMenu::get(page_number: $message->p);
 
-        $this->sendMessageOrFile($menu);
+        $this->sendMessageOrFile(menu: $menu);
     }
 
     protected function handleQuestionReset(object $message): void
     {
         $menu = QuestionMenu::get(
             sub_category_id: $message->s,
+            question_id: property_exists($message, 'q') ? $message->q : null,
             page_number: 1,
         );
 
