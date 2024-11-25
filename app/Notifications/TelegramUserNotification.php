@@ -44,9 +44,11 @@ class TelegramUserNotification extends Notification
             try {
 
                 $keyboards = $this->prepareKeyboards($telegramUserNotification);
+
                 $this->sendMessageOrFile($telegramUserNotification, $user, $keyboards);
 
             }catch(TelegramResponseException $e) {
+
                 if (403 === $e->getCode()) {
 
                     $chat_id = null;

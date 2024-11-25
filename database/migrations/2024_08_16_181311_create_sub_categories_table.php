@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sub_categories', function (Blueprint $table) {
+        Schema::create(table: 'sub_categories', callback: function (Blueprint $table): void {
             $table->id();
             $table->string('title');
             $table->boolean('is_active')->default(false);

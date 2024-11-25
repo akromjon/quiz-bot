@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('telegram_user_notifications', function (Blueprint $table) {
+        Schema::create(table: 'telegram_user_notifications', callback: function (Blueprint $table): void {
             $table->id();
-            $table->json('params');
-            $table->enum('send_to',['paid','free','active','inactive','all'])->default('all');
+            $table->json(column: 'params');
+            $table->enum(column: 'send_to',allowed: ['paid','free','active','inactive','all'])->default(value: 'all');
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('telegram_user_notifications');
+        Schema::dropIfExists(table: 'telegram_user_notifications');
     }
 };

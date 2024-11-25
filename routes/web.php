@@ -12,9 +12,9 @@ Route::get('/set-webhook', function () {
 
     if (!(Filament::auth()->check())) {
 
-        return response()->json([
+        return response()->json(data: [
             'message' => 'unauthorized',
-        ], 403);
+        ], status: 403);
     }
 
     $url = config('app.url') . "/api/bot/JWOaF3FJrqvt4kDYPVlx";

@@ -19,9 +19,9 @@ class FileFSM extends Base
 
     public function route(): void
     {
-        
 
-        $file_id = is_int($this->file->last()) ? $this->file->file_id : $this->file->last()->file_id;
+
+        $file_id = is_int(value: $this->file->last()) ? $this->file->file_id : $this->file->last()->file_id;
 
         $file = $this->getFileFromTelegram($file_id);
 
